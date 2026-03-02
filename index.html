@@ -811,7 +811,6 @@ build_house(name="小玲的家")
 build_school(name="未來中學")
 build_park(name="中央公園")
 build_library(name="市立圖書館")
-build_pool(name="社區游泳池")
 
 # 建造商業區
 build_shop(name="超市")
@@ -825,9 +824,7 @@ build_hospital(name="市立醫院")
 
         const LIB_FUNCTIONS = [
             { name: 'build_house', emoji: '🏠', desc: '蓋一棟房子', sig: 'build_house(row=None, col=None, floors=1, name="")', snippet: 'build_house(name="我的家")\n', params: [['row', '網格列 0-39，None 自動'], ['col', '網格欄 0-39'], ['floors', '樓層數'], ['name', '標籤']] },
-            { name: 'build_apartment', emoji: '🏢', desc: '蓋公寓大樓', sig: 'build_apartment(row=None, col=None, floors=4, name="")', snippet: 'build_apartment(floors=6, name="A棟")\n', params: [['row', '列'], ['col', '欄'], ['floors', '樓層2-10'], ['name', '標籤']] },
             { name: 'build_park', emoji: '🌳', desc: '建造公園', sig: 'build_park(row=None, col=None, name="")', snippet: 'build_park(name="中央公園")\n', params: [['row', '列'], ['col', '欄'], ['name', '名稱']] },
-            { name: 'build_pool', emoji: '🏊', desc: '建造游泳池', sig: 'build_pool(row=None, col=None, name="")', snippet: 'build_pool(name="游泳池")\n', params: [['row', '列'], ['col', '欄'], ['name', '名稱']] },
             { name: 'build_library', emoji: '📖', desc: '建造圖書館', sig: 'build_library(row=None, col=None, name="")', snippet: 'build_library(name="圖書館")\n', params: [['row', '列'], ['col', '欄'], ['name', '名稱']] },
             { name: 'build_school', emoji: '🏫', desc: '建造學校', sig: 'build_school(row=None, col=None, name="")', snippet: 'build_school(name="未來中學")\n', params: [['row', '列'], ['col', '欄'], ['name', '名稱']] },
             { name: 'build_hospital', emoji: '🏥', desc: '建造醫院', sig: 'build_hospital(row=None, col=None, name="")', snippet: 'build_hospital(name="市立醫院")\n', params: [['row', '列'], ['col', '欄'], ['name', '名稱']] },

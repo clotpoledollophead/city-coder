@@ -4,9 +4,9 @@ window.PythonRunner = (function () {
 
     // ── 已支援的函式對照表 ────────────────────────────────────────
     const SUPPORTED_FUNCS = new Set([
-        'build_house', 'build_park', 'build_pool', 'build_library',
+        'build_house', 'build_park', 'build_library',
         'build_school', 'build_hospital', 'build_shop', 'build_road',
-        'build_power_tower', 'build_fountain', 'build_apartment', 'clear_all'
+        'build_power_tower', 'build_fountain', 'clear_all'
     ]);
 
     // ── 解析 Python 字串 ──────────────────────────────────────────
@@ -102,7 +102,6 @@ window.PythonRunner = (function () {
     const FUNC_PARAMS = {
         build_house: ['row', 'col', 'floors', 'name'],
         build_park: ['row', 'col', 'name'],
-        build_pool: ['row', 'col', 'name'],
         build_library: ['row', 'col', 'name'],
         build_school: ['row', 'col', 'name'],
         build_hospital: ['row', 'col', 'name'],
@@ -110,13 +109,11 @@ window.PythonRunner = (function () {
         build_road: ['row', 'col', 'direction'],
         build_power_tower: ['row', 'col'],
         build_fountain: ['row', 'col', 'name'],
-        build_apartment: ['row', 'col', 'floors', 'name'],
         clear_all: [],
     };
     const FUNC_DEFAULTS = {
         build_house: [null, null, 1, ''],
         build_park: [null, null, ''],
-        build_pool: [null, null, ''],
         build_library: [null, null, ''],
         build_school: [null, null, ''],
         build_hospital: [null, null, ''],
@@ -124,7 +121,6 @@ window.PythonRunner = (function () {
         build_road: [20, 20, 'h'],
         build_power_tower: [null, null],
         build_fountain: [null, null, ''],
-        build_apartment: [null, null, 4, ''],
         clear_all: [],
     };
 

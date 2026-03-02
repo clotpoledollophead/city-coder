@@ -85,6 +85,9 @@ window.CityLib = (function () {
         return null;
     }
 
+    // 追蹤所有動態物件（mesh + sprite），讓 clear_all 可以清除
+    const _dynamicObjs = [];
+
     // ── 建立一個 mesh 並加入場景 ──────────────────────────────────
     function addMesh(geo, color, x, y, z, castShadow = true) {
         const scene = getScene(); if (!scene) return null;
@@ -94,12 +97,12 @@ window.CityLib = (function () {
         mesh.castShadow = castShadow;
         mesh.receiveShadow = true;
         scene.add(mesh);
+        _dynamicObjs.push(mesh);   // ← 每次都追蹤
         return mesh;
     }
 
     // 加入建築標籤
     function addLabel(text, x, y, z) {
-        // 用 CSS2D 模擬 — 這裡改用 canvas sprite
         const scene = getScene(); if (!scene) return;
         const canvas = document.createElement('canvas');
         canvas.width = 256; canvas.height = 64;
@@ -117,6 +120,7 @@ window.CityLib = (function () {
         sprite.position.set(x, y, z);
         sprite.scale.set(8, 2, 1);
         scene.add(sprite);
+        _dynamicObjs.push(sprite); // ← sprite 也追蹤
         return sprite;
     }
 
@@ -176,33 +180,6 @@ window.CityLib = (function () {
 
         if (name) addLabel(name, x, elev + 5, z);
         return { row: tile.r, col: tile.c, type: 'park' };
-    }
-
-    // ── build_pool(row=None, col=None, name="") ───────────────────
-    function build_pool(row = null, col = null, name = "") {
-        const tile = (row !== null && col !== null && isFree(row, col))
-            ? { r: row, c: col }
-            : findFreeTile(row || 20, col || 20);
-        if (!tile) return console.warn('[CityLib] No free tile for pool');
-        occupy(tile.r, tile.c);
-        const { x, z } = tilePos(tile.r, tile.c);
-        const elev = tileElev(tile.r, tile.c);
-        const TW = getTileW();
-
-        // 泳池甲板
-        addMesh(new THREE.BoxGeometry(TW * 0.9, 0.3, TW * 0.9), COLORS.pool_deck, x, elev + 0.15, z, false);
-        // 水
-        addMesh(new THREE.BoxGeometry(TW * 0.6, 0.2, TW * 0.65), COLORS.pool, x, elev + 0.28, z, false);
-        // 圍欄四邊
-        for (const [ox, oz, sw, sd] of [
-            [0, TW * 0.47, TW * 0.9, 0.15],
-            [0, -TW * 0.47, TW * 0.9, 0.15],
-            [TW * 0.47, 0, 0.15, TW * 0.9],
-            [-TW * 0.47, 0, 0.15, TW * 0.9],
-        ]) addMesh(new THREE.BoxGeometry(sw, 0.8, sd), 0xcccccc, x + ox, elev + 0.7, z + oz);
-
-        if (name) addLabel(name, x, elev + 3, z);
-        return { row: tile.r, col: tile.c, type: 'pool' };
     }
 
     // ── build_library(row=None, col=None, name="") ────────────────
@@ -374,65 +351,18 @@ window.CityLib = (function () {
         return { row: tile.r, col: tile.c, type: 'fountain' };
     }
 
-    // ── build_apartment(row=None, col=None, floors=4, name="") ────
-    function build_apartment(row = null, col = null, floors = 4, name = "") {
-        const tile = (row !== null && col !== null && isFree(row, col))
-            ? { r: row, c: col }
-            : findFreeTile(row || 20, col || 20);
-        if (!tile) return console.warn('[CityLib] No free tile for apartment');
-        occupy(tile.r, tile.c);
-        const { x, z } = tilePos(tile.r, tile.c);
-        const elev = tileElev(tile.r, tile.c);
-        const TW = getTileW();
-        const H = 3.0 * Math.max(2, Math.min(floors, 10));
-
-        addMesh(new THREE.BoxGeometry(TW * 0.75, H, TW * 0.7), 0xd4c8b8, x, elev + H / 2, z);
-        addMesh(new THREE.BoxGeometry(TW * 0.78, 0.5, TW * 0.73), 0x888888, x, elev + H + 0.25, z);
-        // 每層窗戶
-        for (let f = 0; f < floors && f < 8; f++) {
-            for (let i = -1; i <= 1; i++) {
-                addMesh(new THREE.BoxGeometry(0.9, 1.1, 0.15), COLORS.window,
-                    x + i * 2.2, elev + 1.5 + f * 3.0, z + TW * 0.35 + 0.01);
-            }
-        }
-        // 底層大門
-        addMesh(new THREE.BoxGeometry(1.2, 2.0, 0.15), COLORS.door, x, elev + 1.0, z + TW * 0.35 + 0.01);
-
-        if (name) addLabel(name || "公寓", x, elev + H + 3, z);
-        return { row: tile.r, col: tile.c, type: 'apartment' };
-    }
-
     // ── clear_all() — 清除所有動態建築物 ─────────────────────────
     function clear_all() {
         const scene = getScene(); if (!scene) return;
-        const toRemove = [];
-        scene.traverse(obj => {
-            if (obj.userData && obj.userData.dynamic) toRemove.push(obj);
-        });
-        toRemove.forEach(obj => scene.remove(obj));
-        _occupied.clear();
-        // 重新標記動態物件 — 這個版本我們用另一個追蹤陣列
         _dynamicObjs.forEach(obj => scene.remove(obj));
         _dynamicObjs.length = 0;
+        _occupied.clear();
     }
-
-    // 追蹤動態物件（讓 clear_all 可以清除）
-    const _dynamicObjs = [];
-    const _origAddMesh = addMesh;
-    // Monkey-patch addMesh 以追蹤
-    function addMeshTracked(geo, color, x, y, z, castShadow = true) {
-        const m = _origAddMesh(geo, color, x, y, z, castShadow);
-        if (m) _dynamicObjs.push(m);
-        return m;
-    }
-    // 替換 addMesh
-    // (直接讓所有函式都用這個)
 
     // ── 公開介面 ──────────────────────────────────────────────────
     return {
         build_house,
         build_park,
-        build_pool,
         build_library,
         build_school,
         build_hospital,
@@ -440,7 +370,6 @@ window.CityLib = (function () {
         build_road,
         build_power_tower,
         build_fountain,
-        build_apartment,
         clear_all,
         _dynamicObjs,
         _occupied,
