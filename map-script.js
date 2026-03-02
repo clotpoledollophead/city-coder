@@ -17,8 +17,9 @@ function createMapCanvas() {
 
 // ── Day/night keyframes ────────────────────────────────────────────────────
 const DAY_CYCLE = [
-    { t: 0.00, sky: 0x060618, amb: 0x1a2050, aI: 0.22, sun: 0xff5522, sI: 0.0, elev: 0.0 },
-    { t: 0.22, sky: 0x060618, amb: 0x1a2050, aI: 0.22, sun: 0xff5522, sI: 0.0, elev: 0.0 },
+    // night - ambient slightly brighter for visibility
+    { t: 0.00, sky: 0x060618, amb: 0x384270, aI: 0.22, sun: 0xff5522, sI: 0.0, elev: 0.0 },
+    { t: 0.22, sky: 0x060618, amb: 0x384270, aI: 0.22, sun: 0xff5522, sI: 0.0, elev: 0.0 },
     { t: 0.26, sky: 0x1a0828, amb: 0x2a2060, aI: 0.18, sun: 0xff5522, sI: 0.05, elev: 0.02 },
     { t: 0.29, sky: 0xff5500, amb: 0xff8844, aI: 0.45, sun: 0xff7722, sI: 0.8, elev: 0.12 },
     { t: 0.33, sky: 0x87ceeb, amb: 0xfff0e0, aI: 0.65, sun: 0xffeebb, sI: 1.15, elev: 0.55 },
@@ -26,8 +27,8 @@ const DAY_CYCLE = [
     { t: 0.67, sky: 0x87ceeb, amb: 0xfff0e0, aI: 0.65, sun: 0xffeebb, sI: 1.15, elev: 0.55 },
     { t: 0.71, sky: 0xff5500, amb: 0xff8844, aI: 0.45, sun: 0xff7722, sI: 0.8, elev: 0.12 },
     { t: 0.75, sky: 0x1a0828, amb: 0x2a2060, aI: 0.18, sun: 0xff4400, sI: 0.05, elev: 0.02 },
-    { t: 0.78, sky: 0x060618, amb: 0x1a2050, aI: 0.22, sun: 0xff3300, sI: 0.0, elev: 0.0 },
-    { t: 1.00, sky: 0x060618, amb: 0x1a2050, aI: 0.22, sun: 0xff5522, sI: 0.0, elev: 0.0 },
+    { t: 0.78, sky: 0x060618, amb: 0x384270, aI: 0.22, sun: 0xff3300, sI: 0.0, elev: 0.0 },
+    { t: 1.00, sky: 0x060618, amb: 0x384270, aI: 0.22, sun: 0xff5522, sI: 0.0, elev: 0.0 },
 ];
 
 function lerpColor(hexA, hexB, t) {
@@ -143,7 +144,8 @@ function init3DMap() {
     const CAM_MIN = 80, CAM_MAX = 900;
     const POLAR_MIN = 0.15, POLAR_MAX = Math.PI / 2.1;
 
-    const GRID = 40, TILE_W = 10, GAP = 0.15;
+    // 擴大地圖格子數以讓島嶼變大
+    const GRID = 80, TILE_W = 10, GAP = 0.15;
     const TOTAL = GRID * TILE_W;
     const OFFSET = TOTAL / 2 - TILE_W / 2;
     const HALF = TOTAL / 2;
@@ -183,6 +185,9 @@ function init3DMap() {
     const sandColors = [0xd4b483, 0xc8a96e, 0xdbc07a, 0xcfb87f, 0xc9a86c];
     const tileGeo = new THREE.BoxGeometry(TILE_W - GAP, 1.0, TILE_W - GAP);
 
+    // we'll keep track of tile meshes for hover detection
+    const tiles = [];
+
     for (let row = 0; row < GRID; row++) {
         for (let col = 0; col < GRID; col++) {
             if (!landMask[row][col]) continue;
@@ -196,7 +201,18 @@ function init3DMap() {
             tile.position.set(x, elev - 0.5, z);
             tile.receiveShadow = true;
             tile.castShadow = true;
+            tile.userData = { row, col, originalColor: color, elev };
             scene.add(tile);
+            // add an invisible flat plane at the tile's elevation for reliable ray intersections
+            const hitPlane = new THREE.Mesh(
+                new THREE.PlaneGeometry(TILE_W, TILE_W),
+                new THREE.MeshBasicMaterial({ visible: false })
+            );
+            hitPlane.rotation.x = -Math.PI / 2;
+            hitPlane.position.set(x, elev, z);
+            hitPlane.userData = tile.userData;
+            scene.add(hitPlane);
+            tiles.push(hitPlane);
             if (shore) {
                 const cliffH = Math.max(2.5, elev + 2.5);
                 const cliffGeo = new THREE.BoxGeometry(TILE_W - GAP, cliffH, TILE_W - GAP);
@@ -206,6 +222,113 @@ function init3DMap() {
             }
         }
     }
+
+    // create a single hover label sprite (hidden initially)
+    let hoverLabel = null;
+    function makeHoverLabel() {
+        const canvas = document.createElement('canvas');
+        // crank up resolution to make text unmistakably large
+        canvas.width = 512; canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        // rounded rect background
+        ctx.beginPath();
+        ctx.moveTo(16, 0);
+        ctx.lineTo(canvas.width - 16, 0);
+        ctx.quadraticCurveTo(canvas.width, 0, canvas.width, 16);
+        ctx.lineTo(canvas.width, canvas.height - 16);
+        ctx.quadraticCurveTo(canvas.width, canvas.height, canvas.width - 16, canvas.height);
+        ctx.lineTo(16, canvas.height);
+        ctx.quadraticCurveTo(0, canvas.height, 0, canvas.height - 16);
+        ctx.lineTo(0, 16);
+        ctx.quadraticCurveTo(0, 0, 16, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 48px Oxanium, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`0,0`, canvas.width / 2, canvas.height / 2);
+        const tex = new THREE.CanvasTexture(canvas);
+        const smat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+        const sprite = new THREE.Sprite(smat);
+        sprite.scale.set(16, 4, 1);
+        sprite.visible = false;
+        scene.add(sprite);
+        return sprite;
+    }
+
+    function updateHoverLabel(row, col, x, z, height = 1.2) {
+        if (!hoverLabel) hoverLabel = makeHoverLabel();
+        const canvas = hoverLabel.material.map.image;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        // redraw rounded rect background
+        ctx.beginPath();
+        const w = canvas.width, h = canvas.height, r = 16;
+        ctx.moveTo(r, 0);
+        ctx.lineTo(w - r, 0);
+        ctx.quadraticCurveTo(w, 0, w, r);
+        ctx.lineTo(w, h - r);
+        ctx.quadraticCurveTo(w, h, w - r, h);
+        ctx.lineTo(r, h);
+        ctx.quadraticCurveTo(0, h, 0, h - r);
+        ctx.lineTo(0, r);
+        ctx.quadraticCurveTo(0, 0, r, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 48px Oxanium, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${row},${col}`, w / 2, h / 2);
+        hoverLabel.material.map.needsUpdate = true;
+        hoverLabel.position.set(x, height, z);
+        hoverLabel.visible = true;
+    }
+
+// outline selector used for lassoing effect
+    const selectorGeom = new THREE.EdgesGeometry(new THREE.PlaneGeometry(TILE_W, TILE_W));
+    const selectorMat = new THREE.LineBasicMaterial({ color: 0xffff00, linewidth: 2 });
+    const selector = new THREE.LineSegments(selectorGeom, selectorMat);
+    selector.rotation.x = -Math.PI / 2;
+    selector.visible = false;
+    scene.add(selector);
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let lastTile = null;
+
+    canvas.addEventListener('mousemove', e => {
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(tiles);
+        if (intersects.length > 0) {
+            const tile = intersects[0].object;
+            if (tile !== lastTile) {
+                if (lastTile) {
+                    lastTile.material.color.setHex(lastTile.userData.originalColor);
+                }
+                tile.material.color.setHex(0xffff00);
+                lastTile = tile;
+                // move selector outline
+                selector.position.set(tile.position.x, tile.userData.elev + 0.11, tile.position.z);
+                selector.visible = true;
+                // place label a bit higher so it floats above even tall tiles
+                updateHoverLabel(tile.userData.row, tile.userData.col, tile.position.x, tile.position.z, tile.userData.elev + 2.5);
+            }
+        } else {
+            if (lastTile) {
+                lastTile.material.color.setHex(lastTile.userData.originalColor);
+                lastTile = null;
+            }
+            selector.visible = false;
+            if (hoverLabel) hoverLabel.visible = false;
+        }
+    });
 
     const OCEAN_SIZE = 2600;
     const oceanMat = new THREE.MeshLambertMaterial({ color: 0x1a6eb5 });

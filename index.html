@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CodeScape：未來程市</title>
+    <link rel="icon" href="assets/images/logo.png" type="image/png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -802,36 +803,41 @@
 # 撰寫 Python，按 ▶ 執行，即可在右側地圖建造城市！
 # 點擊下方函式庫的卡片可以插入程式碼範例
 
-# 建造幾棟房子
-build_house(name="小明的家")
-build_house(name="小華的家")
-build_house(name="小玲的家")
+# 建造幾棟房子（需要指定網格座標，靠近島中心）
+build_house(40, 40, name="小明的家")
+build_house(41, 40, name="小華的家")
+build_house(42, 40, name="小玲的家")
 
 # 蓋一所學校與公共設施
-build_school(name="未來中學")
-build_park(name="中央公園")
-build_library(name="市立圖書館")
+build_school(38, 42, name="未來中學")
+build_park(39, 42, name="中央公園")
+build_library(40, 42, name="市立圖書館")
 
 # 建造商業區
-build_shop(name="超市")
-build_shop(name="咖啡廳")
+build_shop(37, 45, name="超市")
+build_shop(38, 45, name="咖啡廳")
+
+# 鋪設道路連接建築
+build_road(39, 44, "h")
+build_road(40, 44, "h")
+build_road(41, 44, "h")
 
 # 廣場與基礎建設
-build_fountain(name="廣場噴水池")
-build_power_tower()
-build_hospital(name="市立醫院")
+build_fountain(40, 40, name="廣場噴水池")
+build_power_tower(42, 40)
+build_hospital(44, 40, name="市立醫院")
 `;
 
         const LIB_FUNCTIONS = [
-            { name: 'build_house', emoji: '🏠', desc: '蓋一棟房子', sig: 'build_house(row=None, col=None, floors=1, name="")', snippet: 'build_house(name="我的家")\n', params: [['row', '網格列 0-39，None 自動'], ['col', '網格欄 0-39'], ['floors', '樓層數'], ['name', '標籤']] },
-            { name: 'build_park', emoji: '🌳', desc: '建造公園', sig: 'build_park(row=None, col=None, name="")', snippet: 'build_park(name="中央公園")\n', params: [['row', '列'], ['col', '欄'], ['name', '名稱']] },
-            { name: 'build_library', emoji: '📖', desc: '建造圖書館', sig: 'build_library(row=None, col=None, name="")', snippet: 'build_library(name="圖書館")\n', params: [['row', '列'], ['col', '欄'], ['name', '名稱']] },
-            { name: 'build_school', emoji: '🏫', desc: '建造學校', sig: 'build_school(row=None, col=None, name="")', snippet: 'build_school(name="未來中學")\n', params: [['row', '列'], ['col', '欄'], ['name', '名稱']] },
-            { name: 'build_hospital', emoji: '🏥', desc: '建造醫院', sig: 'build_hospital(row=None, col=None, name="")', snippet: 'build_hospital(name="市立醫院")\n', params: [['row', '列'], ['col', '欄'], ['name', '名稱']] },
-            { name: 'build_shop', emoji: '🏪', desc: '建造商店', sig: 'build_shop(row=None, col=None, name="")', snippet: 'build_shop(name="便利商店")\n', params: [['row', '列'], ['col', '欄'], ['name', '名稱']] },
-            { name: 'build_fountain', emoji: '⛲', desc: '建造噴水池', sig: 'build_fountain(row=None, col=None, name="")', snippet: 'build_fountain(name="噴水池")\n', params: [['row', '列'], ['col', '欄'], ['name', '名稱']] },
-            { name: 'build_road', emoji: '🛣️', desc: '鋪設道路', sig: 'build_road(row=20, col=20, direction="h")', snippet: 'build_road(row=20, col=20)\n', params: [['row', '列'], ['col', '欄'], ['direction', '"h"水平/"v"垂直']] },
-            { name: 'build_power_tower', emoji: '⚡', desc: '建造電力塔', sig: 'build_power_tower(row=None, col=None)', snippet: 'build_power_tower()\n', params: [['row', '列'], ['col', '欄']] },
+            { name: 'build_house', emoji: '🏠', desc: '蓋一棟房子', sig: 'build_house(row, col, floors=1, name="")', snippet: 'build_house(10, 10, name="我的家")\n', params: [['row', '網格列 0-79'], ['col', '網格欄 0-79'], ['floors', '樓層數'], ['name', '標籤']] },
+            { name: 'build_park', emoji: '🌳', desc: '建造公園', sig: 'build_park(row, col, name="")', snippet: 'build_park(9, 12, name="中央公園")\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)'], ['name', '名稱']] },
+            { name: 'build_library', emoji: '📖', desc: '建造圖書館', sig: 'build_library(row, col, name="")', snippet: 'build_library(10, 12, name="圖書館")\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)'], ['name', '名稱']] },
+            { name: 'build_school', emoji: '🏫', desc: '建造學校', sig: 'build_school(row, col, name="")', snippet: 'build_school(8, 12, name="未來中學")\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)'], ['name', '名稱']] },
+            { name: 'build_hospital', emoji: '🏥', desc: '建造醫院', sig: 'build_hospital(row, col, name="")', snippet: 'build_hospital(24, 20, name="市立醫院")\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)'], ['name', '名稱']] },
+            { name: 'build_shop', emoji: '🏪', desc: '建造商店', sig: 'build_shop(row, col, name="")', snippet: 'build_shop(7, 15, name="便利商店")\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)'], ['name', '名稱']] },
+            { name: 'build_fountain', emoji: '⛲', desc: '建造噴水池', sig: 'build_fountain(row, col, name="")', snippet: 'build_fountain(20, 20, name="噴水池")\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)'], ['name', '名稱']] },
+            { name: 'build_road', emoji: '🛣️', desc: '鋪設道路', sig: 'build_road(row, col, direction="h")', snippet: 'build_road(20, 20)\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)'], ['direction', '"h"水平/"v"垂直']] },
+            { name: 'build_power_tower', emoji: '⚡', desc: '建造電力塔', sig: 'build_power_tower(row, col)', snippet: 'build_power_tower(22, 20)\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)']] },
             { name: 'clear_all', emoji: '🗑️', desc: '清除所有建築', sig: 'clear_all()', snippet: 'clear_all()\n', params: [] },
         ];
 

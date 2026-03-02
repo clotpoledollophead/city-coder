@@ -143,9 +143,13 @@ window.CityLib = (function () {
 
         // 牆壁
         addMesh(new THREE.BoxGeometry(W, H, D), pick(COLORS.house), x, baseY + H / 2, z);
-        // 屋頂
-        const roofGeo = new THREE.ConeGeometry(W * 0.62, 2.0, 4);
-        addMesh(roofGeo, pick(COLORS.roof), x, baseY + H + 1.0, z);
+        // 屋頂 (方錐，轉 45° 讓邊與牆平行，半徑依寬深平均避免不均)
+        const roofRadius = ((W + D) / 2) * 0.62;
+        const roofGeo = new THREE.ConeGeometry(roofRadius, 2.0, 4);
+        const roofMesh = addMesh(roofGeo, pick(COLORS.roof), x, baseY + H + 1.0, z);
+        if (roofMesh) {
+            roofMesh.rotation.y = Math.PI / 4; // align edges with house walls
+        }
         // 門
         addMesh(new THREE.BoxGeometry(0.8, 1.6, 0.2), COLORS.door, x, baseY + 0.8, z + D / 2 + 0.01);
         // 窗

@@ -3,6 +3,8 @@
 window.PythonRunner = (function () {
 
     // ── 已支援的函式對照表 ────────────────────────────────────────
+    // 注意：所有建築相關函式現在都必須指定 row 和 col 兩個座標參數，
+    // 否則轉譯時會報錯並跳過該行。
     const SUPPORTED_FUNCS = new Set([
         'build_house', 'build_park', 'build_library',
         'build_school', 'build_hospital', 'build_shop', 'build_road',
@@ -90,6 +92,14 @@ window.PythonRunner = (function () {
 
             // 根據各函式的參數順序，組出引數陣列
             let finalArgs = buildFinalArgs(fnName, positional, keyword);
+
+            // 要求所有建築型函式一定要提供 row, col
+            if (fnName !== 'clear_all' && (finalArgs[0] == null || finalArgs[1] == null)) {
+                jsLines.push(`// ⚠ 缺少座標: row 和 col 必須提供`);
+                errors.push({ line: i + 1, msg: `函式 "${fnName}" 需要指定 row 和 col` });
+                continue;
+            }
+
             const jsCall = `CityLib.${fnName}(${finalArgs.map(a => JSON.stringify(a)).join(', ')});`;
             jsLines.push(jsCall);
             calls.push({ fn: fnName, args: finalArgs, original: raw.trim(), lineNum: i + 1 });
