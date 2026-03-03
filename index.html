@@ -801,7 +801,7 @@
         const STARTER_CODE =
             `# CodeScape：未來程市 🏙️
 # 撰寫 Python，按 ▶ 執行，即可在右側地圖建造城市！
-# 點擊下方函式庫的卡片可以插入程式碼範例
+# 滑鼠移到格子上可看到 row, col 座標
 
 # 建造幾棟房子（需要指定網格座標，靠近島中心）
 build_house(40, 40, name="小明的家")
@@ -826,6 +826,11 @@ build_road(41, 44, "h")
 build_fountain(40, 40, name="廣場噴水池")
 build_power_tower(42, 40)
 build_hospital(44, 40, name="市立醫院")
+
+# 路燈（白天自動熄滅，黃昏後自動點亮）
+build_streetlight(39, 43)
+build_streetlight(41, 43)
+build_streetlight(38, 44)
 `;
 
         const LIB_FUNCTIONS = [
@@ -838,6 +843,8 @@ build_hospital(44, 40, name="市立醫院")
             { name: 'build_fountain', emoji: '⛲', desc: '建造噴水池', sig: 'build_fountain(row, col, name="")', snippet: 'build_fountain(20, 20, name="噴水池")\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)'], ['name', '名稱']] },
             { name: 'build_road', emoji: '🛣️', desc: '鋪設道路', sig: 'build_road(row, col, direction="h")', snippet: 'build_road(20, 20)\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)'], ['direction', '"h"水平/"v"垂直']] },
             { name: 'build_power_tower', emoji: '⚡', desc: '建造電力塔', sig: 'build_power_tower(row, col)', snippet: 'build_power_tower(22, 20)\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)']] },
+            // ── 新增：路燈 ────────────────────────────────────────────────────────
+            { name: 'build_streetlight', emoji: '💡', desc: '建造路燈（夜晚自動點亮）', sig: 'build_streetlight(row, col)', snippet: 'build_streetlight(20, 21)\n', params: [['row', '列 (0-79)，照亮周圍約 3 格'], ['col', '欄 (0-79)']] },
             { name: 'clear_all', emoji: '🗑️', desc: '清除所有建築', sig: 'clear_all()', snippet: 'clear_all()\n', params: [] },
         ];
 

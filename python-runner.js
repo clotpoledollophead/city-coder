@@ -8,7 +8,7 @@ window.PythonRunner = (function () {
     const SUPPORTED_FUNCS = new Set([
         'build_house', 'build_park', 'build_library',
         'build_school', 'build_hospital', 'build_shop', 'build_road',
-        'build_power_tower', 'build_fountain', 'clear_all'
+        'build_power_tower', 'build_fountain', 'build_streetlight', 'clear_all'
     ]);
 
     // ── 解析 Python 字串 ──────────────────────────────────────────
@@ -119,6 +119,7 @@ window.PythonRunner = (function () {
         build_road: ['row', 'col', 'direction'],
         build_power_tower: ['row', 'col'],
         build_fountain: ['row', 'col', 'name'],
+        build_streetlight: ['row', 'col'],   // ── 新增
         clear_all: [],
     };
     const FUNC_DEFAULTS = {
@@ -131,6 +132,7 @@ window.PythonRunner = (function () {
         build_road: [20, 20, 'h'],
         build_power_tower: [null, null],
         build_fountain: [null, null, ''],
+        build_streetlight: [null, null],     // ── 新增
         clear_all: [],
     };
 

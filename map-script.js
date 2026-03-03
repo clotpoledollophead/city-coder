@@ -288,7 +288,7 @@ function init3DMap() {
         hoverLabel.visible = true;
     }
 
-// outline selector used for lassoing effect
+    // outline selector used for lassoing effect
     const selectorGeom = new THREE.EdgesGeometry(new THREE.PlaneGeometry(TILE_W, TILE_W));
     const selectorMat = new THREE.LineBasicMaterial({ color: 0xffff00, linewidth: 2 });
     const selector = new THREE.LineSegments(selectorGeom, selectorMat);
@@ -415,6 +415,21 @@ function init3DMap() {
             const mins = Math.floor(dayT * 24 * 60);
             clockEl.textContent = `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
             clockEl.className = elev > 0.05 ? 'day' : 'night';
+        }
+
+        // ── 路燈：白天關燈（elev 夠高），黃昏/夜晚點亮 ─────────────
+        // elev 0 = 深夜，0.05 = 黎明/黃昏臨界，1.0 = 正午
+        // Math.max(0, 1 - elev * 18)：elev > 0.055 時完全關閉，
+        // elev < 0.055 時線性升到最大亮度 2.5
+        const lights = window._cityStreetLights;
+        if (lights && lights.length > 0) {
+            const lampIntensity = Math.max(0, 1 - elev * 18) * 2.5;
+            const isOn = lampIntensity > 0.05;
+            lights.forEach(({ pl, bulbMat }) => {
+                pl.intensity = lampIntensity;
+                // 燈泡顏色：開燈時暖黃，關燈時暗棕（MeshBasicMaterial 不受光照影響）
+                bulbMat.color.setHex(isOn ? 0xffee88 : 0x221a00);
+            });
         }
     }
 

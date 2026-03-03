@@ -30,6 +30,7 @@ window.CityLib = (function () {
         tower: 0x888888,
         fountain: 0x60b8e0,
         fountain_w: 0x90d0ff,
+        pole: 0x888899,   // ── 新增：路燈柱顏色
     };
 
     function hex(h) { return new THREE.Color(h); }
@@ -39,8 +40,8 @@ window.CityLib = (function () {
     function getScene() { return window._cityScene; }
     function getGrid() { return window._cityGrid || {}; }
     function getTileW() { return (getGrid().TILE_W || 10); }
-    function getOffset() { return (getGrid().OFFSET || 195); }
-    function getGRID() { return (getGrid().GRID || 40); }
+    function getOffset() { return (getGrid().OFFSET || 395); }
+    function getGRID() { return (getGrid().GRID || 80); }
     function getLandMask() { return window._cityLandMask || null; }
 
     // 把 (row, col) 轉成世界座標中心
@@ -77,7 +78,7 @@ window.CityLib = (function () {
             for (let dr = -d; dr <= d; dr++) {
                 for (let dc = -d; dc <= d; dc++) {
                     if (Math.abs(dr) !== d && Math.abs(dc) !== d) continue;
-                    const r = (preferRow || 20) + dr, c = (preferCol || 20) + dc;
+                    const r = (preferRow || 40) + dr, c = (preferCol || 40) + dc;
                     if (isFree(r, c)) return { r, c };
                 }
             }
@@ -85,8 +86,14 @@ window.CityLib = (function () {
         return null;
     }
 
-    // 追蹤所有動態物件（mesh + sprite），讓 clear_all 可以清除
+    // ── 追蹤所有動態物件（mesh / sprite / PointLight） ────────────
+    // clear_all 只需遍歷這個陣列，就能清除所有建築，包括路燈光源
     const _dynamicObjs = [];
+
+    // ── 路燈控制表 —— map-script.js 的 updateDayNight 讀這裡 ─────
+    // 每筆：{ pl: PointLight, bulbMat: MeshBasicMaterial }
+    const _streetLights = [];
+    window._cityStreetLights = _streetLights;   // 暴露給 map-script.js
 
     // ── 建立一個 mesh 並加入場景 ──────────────────────────────────
     function addMesh(geo, color, x, y, z, castShadow = true) {
@@ -97,7 +104,7 @@ window.CityLib = (function () {
         mesh.castShadow = castShadow;
         mesh.receiveShadow = true;
         scene.add(mesh);
-        _dynamicObjs.push(mesh);   // ← 每次都追蹤
+        _dynamicObjs.push(mesh);
         return mesh;
     }
 
@@ -120,7 +127,7 @@ window.CityLib = (function () {
         sprite.position.set(x, y, z);
         sprite.scale.set(8, 2, 1);
         scene.add(sprite);
-        _dynamicObjs.push(sprite); // ← sprite 也追蹤
+        _dynamicObjs.push(sprite);
         return sprite;
     }
 
@@ -128,11 +135,11 @@ window.CityLib = (function () {
     //  公開 API
     // ════════════════════════════════════════════════════════════
 
-    // ── build_house(row=None, col=None, floors=1, name="") ────────
+    // ── build_house(row, col, floors=1, name="") ──────────────────
     function build_house(row = null, col = null, floors = 1, name = "") {
         const tile = (row !== null && col !== null && isFree(row, col))
             ? { r: row, c: col }
-            : findFreeTile(row || 20, col || 20);
+            : findFreeTile(row || 40, col || 40);
         if (!tile) return console.warn('[CityLib] No free tile for house');
         occupy(tile.r, tile.c);
         const { x, z } = tilePos(tile.r, tile.c);
@@ -141,18 +148,12 @@ window.CityLib = (function () {
         const TW = getTileW();
         const W = TW * 0.7, H = 2.5 * Math.max(1, floors), D = TW * 0.65;
 
-        // 牆壁
         addMesh(new THREE.BoxGeometry(W, H, D), pick(COLORS.house), x, baseY + H / 2, z);
-        // 屋頂 (方錐，轉 45° 讓邊與牆平行，半徑依寬深平均避免不均)
         const roofRadius = ((W + D) / 2) * 0.62;
         const roofGeo = new THREE.ConeGeometry(roofRadius, 2.0, 4);
         const roofMesh = addMesh(roofGeo, pick(COLORS.roof), x, baseY + H + 1.0, z);
-        if (roofMesh) {
-            roofMesh.rotation.y = Math.PI / 4; // align edges with house walls
-        }
-        // 門
+        if (roofMesh) roofMesh.rotation.y = Math.PI / 4;
         addMesh(new THREE.BoxGeometry(0.8, 1.6, 0.2), COLORS.door, x, baseY + 0.8, z + D / 2 + 0.01);
-        // 窗
         addMesh(new THREE.BoxGeometry(0.9, 0.9, 0.15), COLORS.window, x - W * 0.22, baseY + H * 0.62, z + D / 2 + 0.01);
         addMesh(new THREE.BoxGeometry(0.9, 0.9, 0.15), COLORS.window, x + W * 0.22, baseY + H * 0.62, z + D / 2 + 0.01);
 
@@ -160,37 +161,34 @@ window.CityLib = (function () {
         return { row: tile.r, col: tile.c, type: 'house' };
     }
 
-    // ── build_park(row=None, col=None, name="") ───────────────────
+    // ── build_park(row, col, name="") ─────────────────────────────
     function build_park(row = null, col = null, name = "") {
         const tile = (row !== null && col !== null && isFree(row, col))
             ? { r: row, c: col }
-            : findFreeTile(row || 20, col || 20);
+            : findFreeTile(row || 40, col || 40);
         if (!tile) return console.warn('[CityLib] No free tile for park');
         occupy(tile.r, tile.c);
         const { x, z } = tilePos(tile.r, tile.c);
         const elev = tileElev(tile.r, tile.c);
         const TW = getTileW();
 
-        // 草地
         addMesh(new THREE.BoxGeometry(TW * 0.92, 0.3, TW * 0.92), pick(COLORS.park), x, elev + 0.15, z, false);
-        // 3 棵樹
         const treePos = [{ dx: -2.5, dz: -2.5 }, { dx: 2.5, dz: -2.0 }, { dx: 0, dz: 2.5 }];
         for (const { dx, dz } of treePos) {
             addMesh(new THREE.CylinderGeometry(0.22, 0.3, 1.8, 8), COLORS.tree_trunk, x + dx, elev + 0.9, z + dz);
             addMesh(new THREE.SphereGeometry(1.2, 8, 6), pick(COLORS.tree_top), x + dx, elev + 2.8, z + dz);
         }
-        // 長椅
         addMesh(new THREE.BoxGeometry(1.6, 0.2, 0.5), 0x8b6914, x - 1.0, elev + 0.6, z - 0.5);
 
         if (name) addLabel(name, x, elev + 5, z);
         return { row: tile.r, col: tile.c, type: 'park' };
     }
 
-    // ── build_library(row=None, col=None, name="") ────────────────
+    // ── build_library(row, col, name="") ─────────────────────────
     function build_library(row = null, col = null, name = "") {
         const tile = (row !== null && col !== null && isFree(row, col))
             ? { r: row, c: col }
-            : findFreeTile(row || 20, col || 20);
+            : findFreeTile(row || 40, col || 40);
         if (!tile) return console.warn('[CityLib] No free tile for library');
         occupy(tile.r, tile.c);
         const { x, z } = tilePos(tile.r, tile.c);
@@ -198,15 +196,11 @@ window.CityLib = (function () {
         const TW = getTileW();
 
         addMesh(new THREE.BoxGeometry(TW * 0.8, 5.5, TW * 0.75), pick(COLORS.library), x, elev + 2.75, z);
-        // 平屋頂
         addMesh(new THREE.BoxGeometry(TW * 0.88, 0.6, TW * 0.83), COLORS.lib_roof, x, elev + 5.8, z);
-        // 柱子
         for (const ox of [-2.5, 2.5]) {
             addMesh(new THREE.CylinderGeometry(0.25, 0.28, 5.5, 8), 0xd8c8a0, x + ox, elev + 2.75, z + TW * 0.38);
         }
-        // 大門
         addMesh(new THREE.BoxGeometry(1.8, 3.0, 0.2), COLORS.door, x, elev + 1.5, z + TW * 0.375 + 0.05);
-        // 窗
         for (const ox of [-2.8, 2.8]) {
             addMesh(new THREE.BoxGeometry(1.2, 1.8, 0.15), COLORS.window, x + ox, elev + 3.5, z + TW * 0.375);
         }
@@ -215,11 +209,11 @@ window.CityLib = (function () {
         return { row: tile.r, col: tile.c, type: 'library' };
     }
 
-    // ── build_school(row=None, col=None, name="") ─────────────────
+    // ── build_school(row, col, name="") ──────────────────────────
     function build_school(row = null, col = null, name = "") {
         const tile = (row !== null && col !== null && isFree(row, col))
             ? { r: row, c: col }
-            : findFreeTile(row || 20, col || 20);
+            : findFreeTile(row || 40, col || 40);
         if (!tile) return console.warn('[CityLib] No free tile for school');
         occupy(tile.r, tile.c);
         const { x, z } = tilePos(tile.r, tile.c);
@@ -228,10 +222,8 @@ window.CityLib = (function () {
 
         addMesh(new THREE.BoxGeometry(TW * 0.85, 6, TW * 0.8), COLORS.school, x, elev + 3, z);
         addMesh(new THREE.BoxGeometry(TW * 0.9, 0.7, TW * 0.85), COLORS.sch_roof, x, elev + 6.35, z);
-        // 旗桿
         addMesh(new THREE.CylinderGeometry(0.1, 0.1, 5, 6), 0xaaaaaa, x, elev + 5.5, z + TW * 0.35);
         addMesh(new THREE.BoxGeometry(1.5, 1.0, 0.05), 0xdd2222, x + 0.75, elev + 8, z + TW * 0.35);
-        // 窗格
         for (let i = -1; i <= 1; i++) {
             for (let j = 0; j < 2; j++) {
                 addMesh(new THREE.BoxGeometry(1.0, 1.2, 0.15), COLORS.window,
@@ -242,11 +234,11 @@ window.CityLib = (function () {
         return { row: tile.r, col: tile.c, type: 'school' };
     }
 
-    // ── build_hospital(row=None, col=None, name="") ───────────────
+    // ── build_hospital(row, col, name="") ────────────────────────
     function build_hospital(row = null, col = null, name = "") {
         const tile = (row !== null && col !== null && isFree(row, col))
             ? { r: row, c: col }
-            : findFreeTile(row || 20, col || 20);
+            : findFreeTile(row || 40, col || 40);
         if (!tile) return console.warn('[CityLib] No free tile for hospital');
         occupy(tile.r, tile.c);
         const { x, z } = tilePos(tile.r, tile.c);
@@ -255,10 +247,8 @@ window.CityLib = (function () {
 
         addMesh(new THREE.BoxGeometry(TW * 0.8, 7, TW * 0.75), COLORS.hospital, x, elev + 3.5, z);
         addMesh(new THREE.BoxGeometry(TW * 0.85, 0.6, TW * 0.8), COLORS.hosp_roof, x, elev + 7.3, z);
-        // 十字標誌
         addMesh(new THREE.BoxGeometry(0.6, 2.5, 0.2), 0xcc2222, x, elev + 8.5, z + TW * 0.375);
         addMesh(new THREE.BoxGeometry(2.5, 0.6, 0.2), 0xcc2222, x, elev + 8.5, z + TW * 0.375);
-        // 窗
         for (let i = -1; i <= 1; i++) {
             for (let j = 0; j < 3; j++) {
                 addMesh(new THREE.BoxGeometry(1.0, 1.2, 0.15), COLORS.window,
@@ -269,11 +259,11 @@ window.CityLib = (function () {
         return { row: tile.r, col: tile.c, type: 'hospital' };
     }
 
-    // ── build_shop(row=None, col=None, name="") ───────────────────
+    // ── build_shop(row, col, name="") ────────────────────────────
     function build_shop(row = null, col = null, name = "") {
         const tile = (row !== null && col !== null && isFree(row, col))
             ? { r: row, c: col }
-            : findFreeTile(row || 20, col || 20);
+            : findFreeTile(row || 40, col || 40);
         if (!tile) return console.warn('[CityLib] No free tile for shop');
         occupy(tile.r, tile.c);
         const { x, z } = tilePos(tile.r, tile.c);
@@ -281,11 +271,8 @@ window.CityLib = (function () {
         const TW = getTileW();
 
         addMesh(new THREE.BoxGeometry(TW * 0.75, 3.5, TW * 0.7), pick(COLORS.shop), x, elev + 1.75, z);
-        // 招牌
         addMesh(new THREE.BoxGeometry(TW * 0.72, 1.0, 0.2), COLORS.shop_sign, x, elev + 3.8, z + TW * 0.35);
-        // 玻璃門
         addMesh(new THREE.BoxGeometry(2.0, 2.2, 0.15), COLORS.window, x, elev + 1.1, z + TW * 0.35);
-        // 遮雨棚
         addMesh(new THREE.BoxGeometry(TW * 0.78, 0.15, 1.2), pick(COLORS.shop), x, elev + 2.8, z + TW * 0.35 + 0.6);
 
         if (name) addLabel(name || "商店", x, elev + 6, z);
@@ -293,7 +280,7 @@ window.CityLib = (function () {
     }
 
     // ── build_road(row, col, direction="h") ──────────────────────
-    function build_road(row = 20, col = 20, direction = "h") {
+    function build_road(row = 40, col = 40, direction = "h") {
         const tile = { r: row, c: col };
         if (!isLand(tile.r, tile.c)) return console.warn('[CityLib] Tile is not land');
         const { x, z } = tilePos(tile.r, tile.c);
@@ -301,7 +288,6 @@ window.CityLib = (function () {
         const TW = getTileW();
 
         addMesh(new THREE.BoxGeometry(TW, 0.3, TW), COLORS.road, x, elev + 0.15, z, false);
-        // 中心線
         if (direction === "h") {
             addMesh(new THREE.BoxGeometry(TW, 0.05, 0.3), COLORS.road_line, x, elev + 0.32, z, false);
         } else {
@@ -311,48 +297,81 @@ window.CityLib = (function () {
         return { row: tile.r, col: tile.c, type: 'road' };
     }
 
-    // ── build_power_tower(row=None, col=None) ─────────────────────
+    // ── build_power_tower(row, col) ──────────────────────────────
     function build_power_tower(row = null, col = null) {
         const tile = (row !== null && col !== null && isFree(row, col))
             ? { r: row, c: col }
-            : findFreeTile(row || 20, col || 20);
+            : findFreeTile(row || 40, col || 40);
         if (!tile) return console.warn('[CityLib] No free tile for power tower');
         occupy(tile.r, tile.c);
         const { x, z } = tilePos(tile.r, tile.c);
         const elev = tileElev(tile.r, tile.c);
 
-        // 塔身
         addMesh(new THREE.CylinderGeometry(0.25, 0.4, 10, 6), COLORS.tower, x, elev + 5, z);
-        // 橫臂
         addMesh(new THREE.BoxGeometry(4, 0.2, 0.2), COLORS.tower, x, elev + 9.2, z);
-        // 電線（發光點）
         for (const ox of [-1.8, 0, 1.8]) {
             addMesh(new THREE.SphereGeometry(0.18, 6, 6), COLORS.power, x + ox, elev + 9.0, z);
         }
         return { row: tile.r, col: tile.c, type: 'power_tower' };
     }
 
-    // ── build_fountain(row=None, col=None, name="") ───────────────
+    // ── build_fountain(row, col, name="") ────────────────────────
     function build_fountain(row = null, col = null, name = "") {
         const tile = (row !== null && col !== null && isFree(row, col))
             ? { r: row, c: col }
-            : findFreeTile(row || 20, col || 20);
+            : findFreeTile(row || 40, col || 40);
         if (!tile) return console.warn('[CityLib] No free tile for fountain');
         occupy(tile.r, tile.c);
         const { x, z } = tilePos(tile.r, tile.c);
         const elev = tileElev(tile.r, tile.c);
 
-        // 池子
         addMesh(new THREE.CylinderGeometry(3.2, 3.5, 0.5, 16), COLORS.fountain, x, elev + 0.25, z, false);
-        // 水面
         addMesh(new THREE.CylinderGeometry(2.9, 2.9, 0.1, 16), COLORS.fountain_w, x, elev + 0.55, z, false);
-        // 中心柱
         addMesh(new THREE.CylinderGeometry(0.2, 0.3, 2.5, 8), 0xd0c0a0, x, elev + 1.25, z);
-        // 噴水頭
         addMesh(new THREE.SphereGeometry(0.35, 8, 8), COLORS.fountain_w, x, elev + 2.8, z);
 
         if (name) addLabel(name || "噴水池", x, elev + 5, z);
         return { row: tile.r, col: tile.c, type: 'fountain' };
+    }
+
+    // ── build_streetlight(row, col) ──────────────────────────────
+    // 白天燈泡熄滅，夜晚自動點亮（由 map-script.js 的 updateDayNight 驅動）
+    function build_streetlight(row = null, col = null) {
+        const tile = (row !== null && col !== null && isFree(row, col))
+            ? { r: row, c: col }
+            : findFreeTile(row || 40, col || 40);
+        if (!tile) return console.warn('[CityLib] No free tile for streetlight');
+        occupy(tile.r, tile.c);
+        const { x, z } = tilePos(tile.r, tile.c);
+        const elev = tileElev(tile.r, tile.c);
+        const scene = getScene();
+
+        // 燈柱
+        addMesh(new THREE.CylinderGeometry(0.12, 0.18, 7.0, 8), COLORS.pole, x, elev + 3.5, z);
+        // 橫臂
+        const arm = addMesh(new THREE.CylinderGeometry(0.07, 0.07, 2.2, 6), COLORS.pole, x + 1.0, elev + 7.1, z);
+        if (arm) arm.rotation.z = Math.PI / 2;
+        // 燈罩外殼
+        addMesh(new THREE.CylinderGeometry(0.4, 0.28, 0.5, 12), COLORS.pole, x + 2.1, elev + 6.75, z);
+
+        // 燈泡：用 MeshBasicMaterial 讓顏色不受場景光源影響（純自發光效果）
+        const bulbMat = new THREE.MeshBasicMaterial({ color: 0x221a00 }); // 熄燈時暗棕色
+        const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), bulbMat);
+        bulb.position.set(x + 2.1, elev + 6.72, z);
+        scene.add(bulb);
+        _dynamicObjs.push(bulb);   // 確保 clear_all 能清除
+
+        // PointLight：初始 intensity=0（白天關閉），夜晚由 updateDayNight 調整
+        // distance=35 照亮周圍約 3 個 tile，decay=1.6 使光線自然衰減
+        const pl = new THREE.PointLight(0xffe8a0, 0, 35, 1.6);
+        pl.position.set(x + 2.1, elev + 6.72, z);
+        scene.add(pl);
+        _dynamicObjs.push(pl);     // clear_all 時也一併從場景移除
+
+        // 登記到 _streetLights：map-script.js 每幀讀取並更新 intensity 和燈泡顏色
+        _streetLights.push({ pl, bulbMat });
+
+        return { row: tile.r, col: tile.c, type: 'streetlight' };
     }
 
     // ── clear_all() — 清除所有動態建築物 ─────────────────────────
@@ -360,6 +379,7 @@ window.CityLib = (function () {
         const scene = getScene(); if (!scene) return;
         _dynamicObjs.forEach(obj => scene.remove(obj));
         _dynamicObjs.length = 0;
+        _streetLights.length = 0;  // 清空路燈登記（PointLight 已在上面被 remove）
         _occupied.clear();
     }
 
@@ -374,6 +394,7 @@ window.CityLib = (function () {
         build_road,
         build_power_tower,
         build_fountain,
+        build_streetlight,   // ── 新增
         clear_all,
         _dynamicObjs,
         _occupied,
