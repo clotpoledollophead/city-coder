@@ -375,6 +375,13 @@ function init3DMap() {
     const starMat = buildStars(scene);
     const { mesh: sunDisc, mat: sunMat } = buildSkyDisc(scene, 0xfff8e0, 14);
     const { mesh: moonDisc, mat: moonMat } = buildSkyDisc(scene, 0xdde8ff, 9);
+    // simple moon sphere for visibility
+    const moonMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(12, 16, 16),
+        new THREE.MeshBasicMaterial({ color: 0xffffff })
+    );
+    moonMesh.visible = false;
+    scene.add(moonMesh);
 
     const CYCLE_SECONDS = 80;
     const clockEl = document.getElementById('mapClock');
@@ -395,18 +402,28 @@ function init3DMap() {
         const sunAngle = dayT * Math.PI * 2 - Math.PI * 0.5;
         const SUN_R = 800;
 
-        sun.position.set(Math.cos(sunAngle) * SUN_R * 0.7, Math.sin(elev * Math.PI) * SUN_R, Math.sin(sunAngle) * SUN_R * 0.4);
+        // compute sun Y so it goes below ground when the elevation reaches zero
+        let sunY = Math.sin(elev * Math.PI) * SUN_R;
+        if (elev <= 0.01) {
+            // push the sun clearly below the surface to avoid any horizon artifacts
+            sunY = -SUN_R * 0.7;
+        }
+        sun.position.set(Math.cos(sunAngle) * SUN_R * 0.7, sunY, Math.sin(sunAngle) * SUN_R * 0.4);
         sun.color.copy(lerpColor(lo.sun, hi.sun, f));
         sun.intensity = lo.sI + (hi.sI - lo.sI) * f;
         sunDisc.position.copy(sun.position).normalize().multiplyScalar(860);
         sunMat.color.copy(sun.color);
         sunDisc.visible = elev > 0.01;
 
+        // moon is always opposite the sun angle
         const moonAngle = sunAngle + Math.PI, moonElev = 1.0 - elev;
         moonLight.position.set(Math.cos(moonAngle) * SUN_R * 0.7, Math.sin(moonElev * Math.PI) * SUN_R, Math.sin(moonAngle) * SUN_R * 0.4);
         moonLight.intensity = Math.max(0, (1 - elev * 2.5)) * 0.55;
         moonDisc.position.copy(moonLight.position).normalize().multiplyScalar(860);
         moonDisc.visible = moonElev > 0.1;
+        // update moon sphere
+        moonMesh.position.copy(moonLight.position).normalize().multiplyScalar(860);
+        moonMesh.visible = moonElev > 0.1;
 
         starMat.opacity = Math.max(0, 1 - elev * 3.5);
         oceanMat.color.set(elev < 0.08 ? 0x061830 : 0x1a6eb5);
@@ -430,6 +447,9 @@ function init3DMap() {
                 // 燈泡顏色：開燈時暖黃，關燈時暗棕（MeshBasicMaterial 不受光照影響）
                 bulbMat.color.setHex(isOn ? 0xffee88 : 0x221a00);
             });
+            // 街燈由 updateDayNight 控制亮度，其他光源留給日夜週期處理
+            // 沒有特別操作。
+            // （以前曾強制關閉月光/太陽陰影，此處恢復為簡單版本）
         }
     }
 
