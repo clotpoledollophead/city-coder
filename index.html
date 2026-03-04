@@ -1,295 +1,33 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeScape：未來程市</title>
+    <title>Welcome to City Coder</title>
     <link rel="icon" href="assets/images/logo.png" type="image/png">
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Jersey+15&family=Oxanium:wght@200..800&family=Reddit+Sans:ital,wght@0,200..900;1,200..900&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Jersey+15&family=Oxanium:wght@200..800&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="welcome-style.css">
+    
+    <!-- <style>
+        /* Custom layout just for the welcome page */
+        
+    </style> -->
 </head>
-
 <body>
-
-    <header class="header">
-        <h1>CITY CODER</h1>
-        <div class="header-sub">
-            <span class="subtitle">CodeScape：未來程市</span>
-        </div>
-        <div id="mapClock" class="night">00:00</div>
-    </header>
-
-    <div class="container">
-
-        <aside class="left-content">
-
-            <div class="editor-header">
-                <span class="lang-badge">Python</span>
-                <span class="file-name">city_builder.py</span>
-            </div>
-
-            <div class="cm-wrap" id="editorWrap"></div>
-
-            <div class="js-preview" id="jsPreview">
-                <div class="js-preview-header">
-                    <span class="lang-badge js-badge">JS</span>
-                    <span class="label">轉換後的 JavaScript</span>
-                </div>
-                <div class="js-code" id="jsCode"></div>
-            </div>
-
-            <div class="run-bar">
-                <button class="btn btn-run" id="btnRun">▶ 執行</button>
-                <button class="btn btn-clear" id="btnClear">✕ 清除地圖</button>
-                <button class="btn btn-js" id="btnJsToggle">{ } JS</button>
-                <span class="run-hint">Ctrl+Enter</span>
-            </div>
-
-            <div class="output-panel expanded" id="outputPanel">
-                <div class="output-header" id="outputHeader">
-                    <span class="label">輸出紀錄</span>
-                    <span class="badge badge-info" id="outputBadge">就緒</span>
-                </div>
-                <div class="output-body" id="outputBody">
-                    <span class="log-info">▸ 歡迎來到 CodeScape！撰寫 Python 後按 ▶ 執行，即可在右側地圖建造城市。</span>
-                </div>
-            </div>
-
-            <div class="lib-panel">
-                <div class="lib-header" id="libHeader">
-                    <span>📚</span>
-                    <span class="label">函式庫</span>
-                    <span class="toggle-icon" id="libToggleIcon">▲</span>
-                </div>
-                <div class="lib-body" id="libBody"></div>
-            </div>
-
-        </aside>
-
-        <main class="right-content">
-            <div id="mapContainer">
-                <button id="mapResetBtn" title="Reset view">⌂ Reset</button>
-                <div id="mapHints">
-                    <span>🖱 左鍵拖曳：平移</span>
-                    <span>🖱 右鍵拖曳：旋轉</span>
-                    <span>🖱 滾輪：縮放</span>
-                </div>
-            </div>
-        </main>
-
+    <div class="welcome-container">
+        <img src="assets/images/logo.png" alt="City Coder Logo" class="welcome-logo">
+        
+        <h1 class="welcome-title">CITY CODER</h1>
+        <p class="welcome-desc">
+            A browser-based city builder designed to teach kids coding through play. 
+            Script your own miniature world with Python-like commands and watch it come to life!
+        </p>
+        <a href="index.html" class="btn btn-run welcome-btn">▶ Enter CodeScape</a>
     </div>
-
-    <footer class="footer">
-        <p>&copy; 2026 CodeScape：未來程市 · City Coder</p>
-        <span id="footerStatus" class="ready">● 就緒</span>
-    </footer>
-
-    <div class="fn-tooltip" id="fnTooltip"></div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
-    <script src="map-script.js"></script>
-    <script src="city_library.js"></script>
-    <script src="python-runner.js"></script>
-
-    <script>
-        // ═══════════════════════════════════════════════════════════════
-        //  UI Logic
-        // ═══════════════════════════════════════════════════════════════
-
-        const STARTER_CODE =
-            `# CodeScape：未來程市 🏙️
-# 撰寫 Python，按 ▶ 執行，即可在右側地圖建造城市！
-# 滑鼠移到格子上可看到 row, col 座標
-
-# 建造幾棟房子（需要指定網格座標，靠近島中心）
-build_house(40, 40, name="小明的家")
-build_house(41, 40, name="小華的家")
-build_house(42, 40, name="小玲的家")
-
-# 蓋一所學校與公共設施
-build_school(38, 42, name="未來中學")
-build_park(39, 42, name="中央公園")
-build_library(40, 42, name="市立圖書館")
-
-# 建造商業區
-build_shop(37, 45, name="超市")
-build_shop(38, 45, name="咖啡廳")
-
-# 鋪設道路連接建築
-build_road(39, 44, "h")
-build_road(40, 44, "h")
-build_road(41, 44, "h")
-
-# 廣場與基礎建設
-build_fountain(40, 40, name="廣場噴水池")
-build_power_tower(42, 40)
-build_hospital(44, 40, name="市立醫院")
-
-# 路燈（白天自動熄滅，黃昏後自動點亮）
-build_streetlight(39, 43)
-build_streetlight(41, 43)
-build_streetlight(38, 44)
-`;
-
-        const LIB_FUNCTIONS = [
-            { name: 'build_house', emoji: '🏠', desc: '蓋一棟房子', sig: 'build_house(row, col, floors=1, name="")', snippet: 'build_house(10, 10, name="我的家")\n', params: [['row', '網格列 0-79'], ['col', '網格欄 0-79'], ['floors', '樓層數'], ['name', '標籤']] },
-            { name: 'build_park', emoji: '🌳', desc: '建造公園', sig: 'build_park(row, col, name="")', snippet: 'build_park(9, 12, name="中央公園")\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)'], ['name', '名稱']] },
-            { name: 'build_library', emoji: '📖', desc: '建造圖書館', sig: 'build_library(row, col, name="")', snippet: 'build_library(10, 12, name="圖書館")\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)'], ['name', '名稱']] },
-            { name: 'build_school', emoji: '🏫', desc: '建造學校', sig: 'build_school(row, col, name="")', snippet: 'build_school(8, 12, name="未來中學")\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)'], ['name', '名稱']] },
-            { name: 'build_hospital', emoji: '🏥', desc: '建造醫院', sig: 'build_hospital(row, col, name="")', snippet: 'build_hospital(24, 20, name="市立醫院")\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)'], ['name', '名稱']] },
-            { name: 'build_shop', emoji: '🏪', desc: '建造商店', sig: 'build_shop(row, col, name="")', snippet: 'build_shop(7, 15, name="便利商店")\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)'], ['name', '名稱']] },
-            { name: 'build_fountain', emoji: '⛲', desc: '建造噴水池', sig: 'build_fountain(row, col, name="")', snippet: 'build_fountain(20, 20, name="噴水池")\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)'], ['name', '名稱']] },
-            { name: 'build_road', emoji: '🛣️', desc: '鋪設道路', sig: 'build_road(row, col, direction="h")', snippet: 'build_road(20, 20)\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)'], ['direction', '"h"水平/"v"垂直']] },
-            { name: 'build_power_tower', emoji: '⚡', desc: '建造電力塔', sig: 'build_power_tower(row, col)', snippet: 'build_power_tower(22, 20)\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)']] },
-            // ── 新增：路燈 ────────────────────────────────────────────────────────
-            { name: 'build_streetlight', emoji: '💡', desc: '建造路燈（夜晚自動點亮）', sig: 'build_streetlight(row, col)', snippet: 'build_streetlight(20, 21)\n', params: [['row', '列 (0-79)，照亮周圍約 3 格'], ['col', '欄 (0-79)']] },
-            { name: 'clear_all', emoji: '🗑️', desc: '清除所有建築', sig: 'clear_all()', snippet: 'clear_all()\n', params: [] },
-        ];
-
-        let editor;
-
-        function setupEditor() {
-            const wrap = document.getElementById('editorWrap');
-            const ta = document.createElement('textarea');
-            ta.value = STARTER_CODE;
-            wrap.appendChild(ta);
-            editor = CodeMirror.fromTextArea(ta, {
-                mode: 'python',
-                theme: 'dracula',
-                lineNumbers: true,
-                indentUnit: 4,
-                tabSize: 4,
-                indentWithTabs: false,
-                lineWrapping: false,
-                autofocus: true,
-                extraKeys: { 'Ctrl-Enter': runCode, 'Cmd-Enter': runCode },
-            });
-            editor.setSize('100%', '100%');
-        }
-
-        function buildLibCards() {
-            const body = document.getElementById('libBody');
-            const tooltip = document.getElementById('fnTooltip');
-
-            LIB_FUNCTIONS.forEach(fn => {
-                const card = document.createElement('div');
-                card.className = 'lib-fn-card';
-                card.innerHTML = `<span class="fn-emoji">${fn.emoji}</span><span class="fn-name">${fn.name}</span>`;
-
-                card.addEventListener('click', () => {
-                    if (editor) { editor.replaceRange(fn.snippet, editor.getCursor()); editor.focus(); }
-                    tooltip.style.display = 'none';
-                });
-                card.addEventListener('mouseenter', () => {
-                    const paramHtml = fn.params.map(([p, d]) =>
-                        `<div class="tt-param"><span>${p}</span> — ${d}</div>`).join('');
-                    tooltip.innerHTML = `<div class="tt-name">${fn.emoji} ${fn.name}</div><div class="tt-sig">${fn.sig}</div><div class="tt-desc">${fn.desc}</div>${paramHtml}<div class="tt-hint">▸ 點擊插入程式碼</div>`;
-                    const rect = card.getBoundingClientRect();
-                    tooltip.style.left = Math.min(rect.right + 10, window.innerWidth - 285) + 'px';
-                    tooltip.style.top = Math.min(rect.top, window.innerHeight - 215) + 'px';
-                    tooltip.style.display = 'block';
-                });
-                card.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
-                body.appendChild(card);
-            });
-        }
-
-        function log(msg, cls = 'log-info') {
-            const body = document.getElementById('outputBody');
-            const div = document.createElement('div');
-            div.className = cls;
-            div.textContent = msg;
-            body.appendChild(div);
-            body.scrollTop = body.scrollHeight;
-        }
-        function clearLog() { document.getElementById('outputBody').innerHTML = ''; }
-
-        function setStatus(text, cls) {
-            const el = document.getElementById('footerStatus');
-            el.textContent = text;
-            el.className = cls;
-        }
-
-        function runCode() {
-            if (!window.PythonRunner || !window.CityLib) { log('⚠ 引擎尚未載入，請稍後再試', 'log-warn'); return; }
-            const code = editor ? editor.getValue() : '';
-            clearLog();
-            document.getElementById('btnRun').classList.add('running');
-            setStatus('● 執行中…', 'running');
-            log('▸ 開始執行 Python 程式碼…', 'log-info');
-
-            setTimeout(() => {
-                try {
-                    const { jsCode, parseErrors, execResults, totalBuilt } = window.PythonRunner.run(code);
-                    document.getElementById('jsCode').textContent = jsCode;
-                    parseErrors.forEach(e => log(`⚠ 第 ${e.line} 行：${e.msg}`, 'log-warn'));
-                    execResults.forEach(r => {
-                        if (r.ok) log(`✓ 第 ${r.call.lineNum} 行：${r.call.fn}() → ${r.result ? r.result.type : '完成'}`, 'log-ok');
-                        else log(`✗ 第 ${r.call.lineNum} 行：${r.call.fn}() — ${r.error}`, 'log-err');
-                    });
-                    const errCount = execResults.filter(r => !r.ok).length;
-                    log(`▸ 完成！共建造 ${totalBuilt} 個設施${errCount > 0 ? `，${errCount} 個錯誤` : ''}`,
-                        totalBuilt > 0 ? 'log-ok' : 'log-warn');
-
-                    const badge = document.getElementById('outputBadge');
-                    badge.textContent = totalBuilt > 0 ? `✓ ${totalBuilt} 個建造` : '0 個建造';
-                    badge.className = 'badge ' + (totalBuilt > 0 ? 'badge-ok' : 'badge-err');
-                    setStatus(totalBuilt > 0 ? `● ${totalBuilt} 個成功` : '● 無建造', totalBuilt > 0 ? 'ready' : 'error');
-                } catch (err) {
-                    log(`✗ 執行錯誤：${err.message}`, 'log-err');
-                    setStatus('● 執行錯誤', 'error');
-                }
-                document.getElementById('btnRun').classList.remove('running');
-                const panel = document.getElementById('outputPanel');
-                panel.classList.remove('collapsed');
-                panel.classList.add('expanded');
-            }, 50);
-        }
-
-        function clearMap() {
-            if (!window.CityLib) return;
-            window.CityLib.clear_all();
-            clearLog();
-            log('▸ 地圖已清除。', 'log-info');
-            document.getElementById('outputBadge').textContent = '就緒';
-            document.getElementById('outputBadge').className = 'badge badge-info';
-            setStatus('● 就緒', 'ready');
-        }
-
-        document.getElementById('btnRun').addEventListener('click', runCode);
-        document.getElementById('btnClear').addEventListener('click', clearMap);
-        document.getElementById('btnJsToggle').addEventListener('click', () => {
-            document.getElementById('jsPreview').classList.toggle('visible');
-        });
-        document.getElementById('outputHeader').addEventListener('click', () => {
-            const p = document.getElementById('outputPanel');
-            p.classList.toggle('expanded');
-            p.classList.toggle('collapsed');
-        });
-        let libOpen = true;
-        document.getElementById('libHeader').addEventListener('click', () => {
-            libOpen = !libOpen;
-            document.getElementById('libBody').style.display = libOpen ? '' : 'none';
-            document.getElementById('libToggleIcon').textContent = libOpen ? '▲' : '▼';
-        });
-        document.addEventListener('keydown', e => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runCode(); }
-        });
-
-        window.addEventListener('DOMContentLoaded', () => {
-            setupEditor();
-            buildLibCards();
-        });
-    </script>
 </body>
-
 </html>
