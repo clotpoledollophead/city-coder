@@ -29,8 +29,8 @@
 }
 
 .welcome-desc {
-    font-family: 'Oxanium', sans-serif;
-    font-size: 1.3rem;
+    font-family: "DotGothic16", sans-serif;
+    font-size: 1.5rem;
     color: rgba(0, 255, 136, 0.8);
     max-width: 600px;
     margin-bottom: 3rem;
@@ -39,7 +39,8 @@
 
 /* Enlarge the existing run button for the landing page */
 .welcome-btn {
-    font-size: 1.5rem;
+    font-family: 'Jersey 15', sans-serif;
+    font-size: 2rem;
     padding: 15px 40px;
     text-decoration: none;
     border-radius: 8px;
