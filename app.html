@@ -23,7 +23,7 @@
         <div class="header-sub">
             <span class="subtitle">CodeScape：未來程市</span>
         </div>
-        <div id="mapClock" class="night">00:00</div>
+        <div id="mapClock" class="night">12am</div>
     </header>
 
     <div class="container">
@@ -37,18 +37,9 @@
 
             <div class="cm-wrap" id="editorWrap"></div>
 
-            <div class="js-preview" id="jsPreview">
-                <div class="js-preview-header">
-                    <span class="lang-badge js-badge">JS</span>
-                    <span class="label">轉換後的 JavaScript</span>
-                </div>
-                <div class="js-code" id="jsCode"></div>
-            </div>
-
             <div class="run-bar">
                 <button class="btn btn-run" id="btnRun">▶ 執行</button>
                 <button class="btn btn-clear" id="btnClear">✕ 清除地圖</button>
-                <button class="btn btn-js" id="btnJsToggle">{ } JS</button>
                 <span class="run-hint">Ctrl+Enter</span>
             </div>
 
@@ -150,7 +141,6 @@ build_streetlight(38, 44)
             { name: 'build_fountain', emoji: '⛲', desc: '建造噴水池', sig: 'build_fountain(row, col, name="")', snippet: 'build_fountain(20, 20, name="噴水池")\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)'], ['name', '名稱']] },
             { name: 'build_road', emoji: '🛣️', desc: '鋪設道路', sig: 'build_road(row, col, direction="h")', snippet: 'build_road(20, 20)\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)'], ['direction', '"h"水平/"v"垂直']] },
             { name: 'build_power_tower', emoji: '⚡', desc: '建造電力塔', sig: 'build_power_tower(row, col)', snippet: 'build_power_tower(22, 20)\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)']] },
-            // ── 新增：路燈 ────────────────────────────────────────────────────────
             { name: 'build_streetlight', emoji: '💡', desc: '建造路燈（夜晚自動點亮）', sig: 'build_streetlight(row, col)', snippet: 'build_streetlight(20, 21)\n', params: [['row', '列 (0-79)，照亮周圍約 3 格'], ['col', '欄 (0-79)']] },
             { name: 'clear_all', emoji: '🗑️', desc: '清除所有建築', sig: 'clear_all()', snippet: 'clear_all()\n', params: [] },
         ];
@@ -230,7 +220,6 @@ build_streetlight(38, 44)
             setTimeout(() => {
                 try {
                     const { jsCode, parseErrors, execResults, totalBuilt } = window.PythonRunner.run(code);
-                    document.getElementById('jsCode').textContent = jsCode;
                     parseErrors.forEach(e => log(`⚠ 第 ${e.line} 行：${e.msg}`, 'log-warn'));
                     execResults.forEach(r => {
                         if (r.ok) log(`✓ 第 ${r.call.lineNum} 行：${r.call.fn}() → ${r.result ? r.result.type : '完成'}`, 'log-ok');
@@ -267,9 +256,6 @@ build_streetlight(38, 44)
 
         document.getElementById('btnRun').addEventListener('click', runCode);
         document.getElementById('btnClear').addEventListener('click', clearMap);
-        document.getElementById('btnJsToggle').addEventListener('click', () => {
-            document.getElementById('jsPreview').classList.toggle('visible');
-        });
         document.getElementById('outputHeader').addEventListener('click', () => {
             const p = document.getElementById('outputPanel');
             p.classList.toggle('expanded');

@@ -428,28 +428,25 @@ function init3DMap() {
         starMat.opacity = Math.max(0, 1 - elev * 3.5);
         oceanMat.color.set(elev < 0.08 ? 0x061830 : 0x1a6eb5);
 
+        // ── 時鐘：顯示 1am / 2pm 格式 ──────────────────────────────
         if (clockEl) {
-            const mins = Math.floor(dayT * 24 * 60);
-            clockEl.textContent = `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+            const totalHours = Math.floor(dayT * 24);
+            const hour12 = totalHours % 12 === 0 ? 12 : totalHours % 12;
+            const ampm = totalHours < 12 ? 'am' : 'pm';
+            clockEl.textContent = `${hour12}${ampm}`;
             clockEl.className = elev > 0.05 ? 'day' : 'night';
         }
 
         // ── 路燈：白天關燈（elev 夠高），黃昏/夜晚點亮 ─────────────
         // elev 0 = 深夜，0.05 = 黎明/黃昏臨界，1.0 = 正午
-        // Math.max(0, 1 - elev * 18)：elev > 0.055 時完全關閉，
-        // elev < 0.055 時線性升到最大亮度 2.5
         const lights = window._cityStreetLights;
         if (lights && lights.length > 0) {
             const lampIntensity = Math.max(0, 1 - elev * 18) * 2.5;
             const isOn = lampIntensity > 0.05;
             lights.forEach(({ pl, bulbMat }) => {
                 pl.intensity = lampIntensity;
-                // 燈泡顏色：開燈時暖黃，關燈時暗棕（MeshBasicMaterial 不受光照影響）
                 bulbMat.color.setHex(isOn ? 0xffee88 : 0x221a00);
             });
-            // 街燈由 updateDayNight 控制亮度，其他光源留給日夜週期處理
-            // 沒有特別操作。
-            // （以前曾強制關閉月光/太陽陰影，此處恢復為簡單版本）
         }
     }
 
