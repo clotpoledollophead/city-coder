@@ -12,11 +12,6 @@
     
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="welcome-style.css">
-    
-    <!-- <style>
-        /* Custom layout just for the welcome page */
-        
-    </style> -->
 </head>
 <body>
     <div class="welcome-container">
@@ -27,7 +22,25 @@
             <br>
             來編寫你自己的迷你世界，並看著它活起來！
         </p>
-        <a href="app.html" class="btn btn-run welcome-btn">▶ Enter CodeScape</a>
+
+        <!-- Primary CTA → tutorial -->
+        <a href="tutorial.html" class="btn btn-run welcome-btn">📚 新手教程</a>
+
+        <!-- Secondary link for returning users -->
+        <a href="app.html" class="skip-link">已經學過了？直接進入 CodeScape →</a>
     </div>
+
+    <style>
+        .skip-link {
+            margin-top: 1.2rem;
+            font-family: 'Oxanium', sans-serif;
+            font-size: 0.82rem;
+            color: rgba(0, 255, 136, 0.4);
+            text-decoration: none;
+            letter-spacing: 0.5px;
+            transition: color 0.2s;
+        }
+        .skip-link:hover { color: rgba(0, 255, 136, 0.8); }
+    </style>
 </body>
 </html>

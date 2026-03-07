@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新手教程 — City Coder</title>
+    <link rel="icon" href="assets/images/logo.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jersey+15&family=Oxanium:wght@200..800&family=DotGothic16&family=Reddit+Sans:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="tutorial-style.css">
+</head>
+<body>
+
+<canvas id="stars-canvas"></canvas>
+
+<header class="header">
+    <a href="index.html"><h1>CITY CODER</h1></a>
+    <span class="header-badge">📚 新手教程</span>
+    <a class="header-back" href="index.html">← 回首頁</a>
+</header>
+
+<!-- Progress indicator -->
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- ════════════════════════════════════════════
+     SLIDES
+════════════════════════════════════════════ -->
+<div class="slides-wrap">
+
+    <!-- ── Slide 0: Welcome ── -->
+    <div class="slide active" id="slide-0">
+        <div class="card">
+            <span class="slide-num">教程 · 第 1 頁，共 5 頁</span>
+            <span class="slide-emoji">🏙️</span>
+            <h2 class="slide-title">歡迎來到 City Coder！</h2>
+            <div class="mascot-row">
+                <span class="mascot-icon">🤖</span>
+                <div class="mascot-bubble">
+                    嗨嗨！我是你的城市助手 <strong>科科</strong>！<br>
+                    我會帶你學會用 <strong>程式碼</strong> 蓋出自己的城市。<br>
+                    別擔心，超級簡單的，一起來吧！🎉
+                </div>
+            </div>
+            <p class="slide-desc">
+                在 City Coder 裡，你可以用 <span class="hl-green">Python 程式語言</span> 來蓋房子、公園、學校……<br>
+                就像在玩積木，但這次你要用 <strong>文字指令</strong> 告訴電腦要蓋什麼！
+            </p>
+            <div class="analogy-box green">
+                <span class="analogy-icon">🎮</span>
+                <div class="analogy-text">
+                    <strong>程式碼是什麼？</strong><br>
+                    就像你在玩遊戲時，角色會按照你按的按鈕移動。<br>
+                    程式碼就是你給電腦的「按鈕說明書」！
+                </div>
+            </div>
+            <div class="flow-row">
+                <div class="flow-box green">
+                    <span class="fb-icon">⌨️</span>
+                    <span class="fb-label">你打指令</span>
+                </div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box orange">
+                    <span class="fb-icon">💻</span>
+                    <span class="fb-label">電腦讀懂</span>
+                </div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box pink">
+                    <span class="fb-icon">🏠</span>
+                    <span class="fb-label">城市蓋好！</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Slide 1: Functions ── -->
+    <div class="slide" id="slide-1">
+        <div class="card">
+            <span class="slide-num">教程 · 第 2 頁，共 5 頁</span>
+            <span class="slide-emoji">✨</span>
+            <h2 class="slide-title">函式：你的魔法咒語</h2>
+            <div class="mascot-row">
+                <span class="mascot-icon">🤖</span>
+                <div class="mascot-bubble">
+                    <strong>函式（function）</strong> 就像是一個魔法咒語！<br>
+                    你喊出咒語的名字，電腦就會照著做！✨
+                </div>
+            </div>
+            <p class="slide-desc">
+                在 City Coder 裡，每種建築都有自己的函式名字：
+            </p>
+            <div class="analogy-box orange">
+                <span class="analogy-icon">🏠</span>
+                <div class="analogy-text">
+                    <strong>build_house</strong> → 蓋一棟房子<br>
+                    <strong>build_park</strong> → 建造公園<br>
+                    <strong>build_school</strong> → 蓋一間學校
+                </div>
+            </div>
+            <p class="slide-desc">
+                每個函式後面都要加上 <span class="hl-green">( )</span>（括號），<br>
+                括號裡面放的是你想告訴電腦的 <strong>細節資訊</strong>，叫做「參數」：
+            </p>
+            <div class="code-demo">
+                <div class="code-demo-bar">
+                    <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                    city_builder.py
+                </div>
+                <div class="code-lines">
+                    <div class="cl"><span class="comment"># 在第 40 列、第 40 欄蓋一棟叫「小明的家」的房子</span></div>
+                    <div class="cl">
+                        <span class="fn">build_house</span><span class="paren">(</span><span class="num">40</span><span class="paren">,</span>
+                        <span class="num">40</span><span class="paren">,</span>
+                        name<span class="eq">=</span><span class="str">"小明的家"</span><span class="paren">)</span>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px; margin:0.6rem 0;">
+                <span class="ann-label blue">🔵 build_house = 函式名稱</span>
+                <span class="ann-label orange">🟠 40, 40 = 位置（列, 欄）</span>
+                <span class="ann-label pink">🔴 "小明的家" = 名字標籤</span>
+            </div>
+            <div class="analogy-box blue">
+                <span class="analogy-icon">🍕</span>
+                <div class="analogy-text">
+                    <strong>比喻：</strong> 就像點披薩一樣！<br>
+                    <code>訂披薩(尺寸=大, 口味="夏威夷")</code><br>
+                    函式是「訂披薩」，括號裡是你的要求！
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Slide 2: Variables ── -->
+    <div class="slide" id="slide-2">
+        <div class="card">
+            <span class="slide-num">教程 · 第 3 頁，共 5 頁</span>
+            <span class="slide-emoji">🗃️</span>
+            <h2 class="slide-title">變數：幫東西取名字</h2>
+            <div class="mascot-row">
+                <span class="mascot-icon">🤖</span>
+                <div class="mascot-bubble">
+                    <strong>變數（variable）</strong> 就像一個有名字的箱子！<br>
+                    你可以把數字或文字放進去，之後直接叫它的名字來用！🗃️
+                </div>
+            </div>
+            <p class="slide-desc">
+                比如說你想在地圖上蓋很多棟房子，都在差不多的地方——<br>
+                與其每次都打一遍座標，不如把它存進一個「箱子」：
+            </p>
+            <div class="code-demo">
+                <div class="code-demo-bar">
+                    <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                    city_builder.py
+                </div>
+                <div class="code-lines">
+                    <div class="cl"><span class="comment"># 把「中心位置」存進變數</span></div>
+                    <div class="cl"><span class="var">center_row</span> <span class="eq">=</span> <span class="num">40</span></div>
+                    <div class="cl"><span class="var">center_col</span> <span class="eq">=</span> <span class="num">40</span></div>
+                    <div class="cl"></div>
+                    <div class="cl"><span class="comment"># 用變數來蓋房子</span></div>
+                    <div class="cl">
+                        <span class="fn">build_house</span><span class="paren">(</span><span class="var">center_row</span><span class="paren">,</span>
+                        <span class="var">center_col</span><span class="paren">,</span>
+                        name<span class="eq">=</span><span class="str">"第一棟"</span><span class="paren">)</span>
+                    </div>
+                    <div class="cl">
+                        <span class="fn">build_house</span><span class="paren">(</span><span class="var">center_row</span> <span class="eq">+</span> <span class="num">1</span><span class="paren">,</span>
+                        <span class="var">center_col</span><span class="paren">,</span>
+                        name<span class="eq">=</span><span class="str">"第二棟"</span><span class="paren">)</span>
+                    </div>
+                    <div class="cl">
+                        <span class="fn">build_house</span><span class="paren">(</span><span class="var">center_row</span> <span class="eq">+</span> <span class="num">2</span><span class="paren">,</span>
+                        <span class="var">center_col</span><span class="paren">,</span>
+                        name<span class="eq">=</span><span class="str">"第三棟"</span><span class="paren">)</span>
+                    </div>
+                </div>
+            </div>
+            <div class="analogy-box green">
+                <span class="analogy-icon">🗃️</span>
+                <div class="analogy-text">
+                    <strong>變數小技巧：</strong><br>
+                    <strong>center_row = 40</strong> 代表「把 40 這個數字，放進叫做 center_row 的箱子」<br>
+                    以後你只要說 <strong>center_row</strong>，電腦就知道是 40 了！
+                </div>
+            </div>
+            <div class="try-panel">
+                <div class="try-panel-title">🧠 動動腦：以下哪個是正確的變數名稱寫法？</div>
+                <div class="quiz-wrap" id="quiz-var">
+                    <div class="quiz-options">
+                        <div class="qopt" onclick="checkQuiz('quiz-var', this, false)">
+                            <span class="opt-letter">A</span>
+                            <span>1myVar = 10</span>
+                        </div>
+                        <div class="qopt" onclick="checkQuiz('quiz-var', this, true)">
+                            <span class="opt-letter">B</span>
+                            <span>my_city = 40</span>
+                        </div>
+                        <div class="qopt" onclick="checkQuiz('quiz-var', this, false)">
+                            <span class="opt-letter">C</span>
+                            <span>my city = 40</span>
+                        </div>
+                    </div>
+                    <div class="quiz-feedback" id="quiz-var-fb"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Slide 3: Running code ── -->
+    <div class="slide" id="slide-3">
+        <div class="card">
+            <span class="slide-num">教程 · 第 4 頁，共 5 頁</span>
+            <span class="slide-emoji">▶️</span>
+            <h2 class="slide-title">如何執行程式碼？</h2>
+            <div class="mascot-row">
+                <span class="mascot-icon">🤖</span>
+                <div class="mascot-bubble">
+                    好了！你學會寫指令了。現在讓我告訴你怎麼讓電腦執行它，<br>
+                    然後在右邊地圖上看到你的城市長出來！🗺️
+                </div>
+            </div>
+            <div class="run-demo" id="runDemo">
+                <div class="run-step" id="rs0">
+                    <span class="run-step-num">①</span>
+                    <div class="run-step-body">
+                        在左邊的 <strong>編輯器</strong> 裡打上你的程式碼<br>
+                        例如：<code style="color:#4ea8d4; font-size:0.88rem;">build_house(40, 40, name="我的家")</code>
+                    </div>
+                </div>
+                <div class="run-step" id="rs1">
+                    <span class="run-step-num">②</span>
+                    <div class="run-step-body">
+                        按下左下角的綠色 <strong>▶ 執行</strong> 按鈕
+                        <span class="tag tag-green">或按 Ctrl + Enter</span>
+                    </div>
+                </div>
+                <div class="run-step" id="rs2">
+                    <span class="run-step-num">③</span>
+                    <div class="run-step-body">
+                        電腦會讀你的程式，在右邊的 <strong>3D 地圖</strong> 上蓋出建築！
+                    </div>
+                </div>
+                <div class="run-step" id="rs3">
+                    <span class="run-step-num">④</span>
+                    <div class="run-step-body">
+                        下方的 <strong>輸出紀錄</strong> 會告訴你每一行是成功了
+                        <span class="tag tag-green">✓ 成功</span> 還是有錯
+                        <span class="tag tag-orange">⚠ 錯誤</span>
+                    </div>
+                </div>
+            </div>
+            <p class="slide-desc" style="margin-top:1rem;">輸出紀錄長這樣：</p>
+            <div class="output-preview">
+                <div class="op-info">▸ 開始執行 Python 程式碼…</div>
+                <div class="op-ok">✓ 第 1 行：build_house() → house</div>
+                <div class="op-ok">✓ 第 2 行：build_park() → park</div>
+                <div class="op-err">✗ 第 3 行：build_house() — 函式需要指定 row 和 col</div>
+                <div class="op-ok">▸ 完成！共建造 2 個設施，1 個錯誤</div>
+            </div>
+            <div class="analogy-box pink">
+                <span class="analogy-icon">💡</span>
+                <div class="analogy-text">
+                    <strong>有錯誤也沒關係！</strong><br>
+                    程式師每天都會犯錯，再修改就好了。<br>
+                    看看錯誤訊息說的是哪一行，去那行改一改再執行！
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Slide 4: Ready to go! ── -->
+    <div class="slide" id="slide-4">
+        <div class="card">
+            <span class="slide-num">教程 · 第 5 頁，共 5 頁</span>
+            <span class="slide-emoji">🚀</span>
+            <h2 class="slide-title">你已經準備好了！</h2>
+            <div class="mascot-row">
+                <span class="mascot-icon">🤖</span>
+                <div class="mascot-bubble">
+                    哇！你學了函式、變數，還知道怎麼執行程式。<br>
+                    現在就去蓋屬於你的未來城市吧！ 💪
+                </div>
+            </div>
+            <p class="slide-desc">
+                這是所有你可以使用的 <span class="hl-green">建築指令</span>。<br>
+                記得每個指令都要填上 <strong>row（列）</strong> 和 <strong>col（欄）</strong>！
+            </p>
+            <div style="display:flex; flex-wrap:wrap; gap:8px; margin: 0.5rem 0 1.2rem;">
+                <span class="chip">🏠 build_house</span>
+                <span class="chip">🌳 build_park</span>
+                <span class="chip">📖 build_library</span>
+                <span class="chip">🏫 build_school</span>
+                <span class="chip">🏥 build_hospital</span>
+                <span class="chip">🏪 build_shop</span>
+                <span class="chip">⛲ build_fountain</span>
+                <span class="chip">🛣️ build_road</span>
+                <span class="chip">⚡ build_power_tower</span>
+                <span class="chip">💡 build_streetlight</span>
+                <span class="chip">🗑️ clear_all</span>
+            </div>
+            <p class="slide-desc">快速複習一下，試試看這段程式碼：</p>
+            <div class="code-demo">
+                <div class="code-demo-bar">
+                    <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+                    city_builder.py
+                </div>
+                <div class="code-lines">
+                    <div class="cl"><span class="comment"># 蓋一個小社區</span></div>
+                    <div class="cl">
+                        <span class="fn">build_house</span><span class="paren">(</span><span class="num">40</span><span class="paren">,</span>
+                        <span class="num">40</span><span class="paren">,</span> name<span class="eq">=</span><span class="str">"我的家"</span><span class="paren">)</span>
+                    </div>
+                    <div class="cl">
+                        <span class="fn">build_park</span><span class="paren">(</span><span class="num">41</span><span class="paren">,</span>
+                        <span class="num">40</span><span class="paren">,</span> name<span class="eq">=</span><span class="str">"社區公園"</span><span class="paren">)</span>
+                    </div>
+                    <div class="cl">
+                        <span class="fn">build_school</span><span class="paren">(</span><span class="num">40</span><span class="paren">,</span>
+                        <span class="num">42</span><span class="paren">,</span> name<span class="eq">=</span><span class="str">"我的學校"</span><span class="paren">)</span>
+                    </div>
+                    <div class="cl">
+                        <span class="fn">build_road</span><span class="paren">(</span><span class="num">40</span><span class="paren">,</span>
+                        <span class="num">41</span><span class="paren">,</span> <span class="str">"h"</span><span class="paren">)</span>
+                    </div>
+                    <div class="cl">
+                        <span class="fn">build_streetlight</span><span class="paren">(</span><span class="num">39</span><span class="paren">,</span>
+                        <span class="num">41</span><span class="paren">)</span>
+                    </div>
+                </div>
+            </div>
+            <div class="analogy-box green">
+                <span class="analogy-icon">🗺️</span>
+                <div class="analogy-text">
+                    <strong>小提示：</strong> 在地圖上移動滑鼠可以看到每個格子的 <strong>row, col</strong> 座標！<br>
+                    右鍵拖曳可以旋轉視角，左鍵拖曳平移，滾輪縮放。
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Navigation -->
+<div class="nav-row" id="navRow">
+    <button class="nav-btn prev" id="btnPrev" onclick="changeSlide(-1)" disabled>← 上一頁</button>
+    <button class="nav-btn next" id="btnNext" onclick="changeSlide(1)">下一頁 →</button>
+</div>
+
+<script src="tutorial.js"></script>
+</body>
+</html>
