@@ -18,12 +18,22 @@
 
 <body>
 
-    <header class="header">
+    <header class="header" style="position:relative;">
         <h1>CITY CODER</h1>
         <div class="header-sub">
             <span class="subtitle">CodeScape：未來程市</span>
         </div>
         <div id="mapClock" class="night">12am</div>
+        <button id="btnResetGame" title="清除所有進度，重新開始" style="
+            position:absolute; right:14px; top:50%; transform:translateY(-50%);
+            font-family:'Oxanium',monospace; font-size:0.7rem; font-weight:700;
+            letter-spacing:0.5px; padding:5px 12px; border-radius:6px;
+            background:transparent; border:1px solid rgba(255,96,80,0.35);
+            color:rgba(255,96,80,0.55); cursor:pointer; transition:all 0.15s;
+        " onmouseover="this.style.color='#ff6050';this.style.borderColor='#ff6050';this.style.background='rgba(255,96,80,0.08)'"
+            onmouseout="this.style.color='rgba(255,96,80,0.55)';this.style.borderColor='rgba(255,96,80,0.35)';this.style.background='transparent'">
+            🔄 重新遊玩
+        </button>
     </header>
 
     <div class="container">
@@ -90,6 +100,8 @@
     <script src="map-script.js"></script>
     <script src="city_library.js"></script>
     <script src="python-runner.js"></script>
+    <!-- ── 新增：課程解鎖系統 ── -->
+    <script src="lesson-system.js"></script>
 
     <script>
         // ═══════════════════════════════════════════════════════════════
@@ -131,6 +143,7 @@ build_streetlight(41, 43)
 build_streetlight(38, 44)
 `;
 
+        // ── LIB_FUNCTIONS 定義（保持不變，新增 data-fn 屬性） ─────────
         const LIB_FUNCTIONS = [
             { name: 'build_house', emoji: '🏠', desc: '蓋一棟房子', sig: 'build_house(row, col, floors=1, name="")', snippet: 'build_house(10, 10, name="我的家")\n', params: [['row', '網格列 0-79'], ['col', '網格欄 0-79'], ['floors', '樓層數'], ['name', '標籤']] },
             { name: 'build_park', emoji: '🌳', desc: '建造公園', sig: 'build_park(row, col, name="")', snippet: 'build_park(9, 12, name="中央公園")\n', params: [['row', '列 (0-79)'], ['col', '欄 (0-79)'], ['name', '名稱']] },
@@ -145,12 +158,17 @@ build_streetlight(38, 44)
             { name: 'clear_all', emoji: '🗑️', desc: '清除所有建築', sig: 'clear_all()', snippet: 'clear_all()\n', params: [] },
         ];
 
+        // Expose for lesson-system.js snippet insertion
+        window.LIB_FUNCTIONS = LIB_FUNCTIONS;
+
         let editor;
 
         function setupEditor() {
             const wrap = document.getElementById('editorWrap');
             const ta = document.createElement('textarea');
-            ta.value = STARTER_CODE;
+            // ── Load saved map code from cookie (fallback to starter) ──
+            const savedCode = window.LessonSystem ? window.LessonSystem.loadMapCode() : null;
+            ta.value = savedCode || STARTER_CODE;
             wrap.appendChild(ta);
             editor = CodeMirror.fromTextArea(ta, {
                 mode: 'python',
@@ -164,17 +182,34 @@ build_streetlight(38, 44)
                 extraKeys: { 'Ctrl-Enter': runCode, 'Cmd-Enter': runCode },
             });
             editor.setSize('100%', '100%');
+            // Expose editor for lesson system
+            window._mainEditor = editor;
         }
 
         function buildLibCards() {
             const body = document.getElementById('libBody');
             const tooltip = document.getElementById('fnTooltip');
 
-            LIB_FUNCTIONS.forEach(fn => {
+            // ── 按照 LESSON 解鎖順序排列，最後才是 clear_all ──
+            const LESSON_FN_ORDER = [
+                'build_house', 'build_park', 'build_road', 'build_school', 'build_shop',
+                'build_library', 'build_hospital', 'build_fountain', 'build_power_tower',
+                'build_streetlight', 'clear_all'
+            ];
+            const sortedFns = [...LIB_FUNCTIONS].sort((a, b) => {
+                const ai = LESSON_FN_ORDER.indexOf(a.name);
+                const bi = LESSON_FN_ORDER.indexOf(b.name);
+                return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+            });
+
+            sortedFns.forEach(fn => {
                 const card = document.createElement('div');
                 card.className = 'lib-fn-card';
+                // ── 新增 data-fn 屬性供 lesson-system.js 識別 ──
+                card.dataset.fn = fn.name;
                 card.innerHTML = `<span class="fn-emoji">${fn.emoji}</span><span class="fn-name">${fn.name}</span>`;
 
+                // Default click (snippet insert) — will be overridden by lesson-system for locked cards
                 card.addEventListener('click', () => {
                     if (editor) { editor.replaceRange(fn.snippet, editor.getCursor()); editor.focus(); }
                     tooltip.style.display = 'none';
@@ -233,6 +268,8 @@ build_streetlight(38, 44)
                     badge.textContent = totalBuilt > 0 ? `✓ ${totalBuilt} 個建造` : '0 個建造';
                     badge.className = 'badge ' + (totalBuilt > 0 ? 'badge-ok' : 'badge-err');
                     setStatus(totalBuilt > 0 ? `● ${totalBuilt} 個成功` : '● 無建造', totalBuilt > 0 ? 'ready' : 'error');
+                    // ── Auto-save editor code to cookie ──
+                    if (window.LessonSystem) window.LessonSystem.saveMapCode(code);
                 } catch (err) {
                     log(`✗ 執行錯誤：${err.message}`, 'log-err');
                     setStatus('● 執行錯誤', 'error');
@@ -256,6 +293,12 @@ build_streetlight(38, 44)
 
         document.getElementById('btnRun').addEventListener('click', runCode);
         document.getElementById('btnClear').addEventListener('click', clearMap);
+        document.getElementById('btnResetGame').addEventListener('click', () => {
+            if (confirm('⚠️ 確定要重新遊玩嗎？\n\n這將清除：\n• 所有課程解鎖進度\n• 已儲存的地圖程式碼\n\n重新整理後將從第一課開始。')) {
+                if (window.LessonSystem) window.LessonSystem.resetAll();
+                location.reload();
+            }
+        });
         document.getElementById('outputHeader').addEventListener('click', () => {
             const p = document.getElementById('outputPanel');
             p.classList.toggle('expanded');
@@ -274,6 +317,11 @@ build_streetlight(38, 44)
         window.addEventListener('DOMContentLoaded', () => {
             setupEditor();
             buildLibCards();
+
+            // ── 初始化課程解鎖系統 ────────────────────────────────────
+            // fromTutorial=true 時觸發卡片逐一出現動畫
+            const fromTutorial = new URLSearchParams(window.location.search).get('tutorial') === 'done';
+            window.LessonSystem.init({ freshStart: fromTutorial });
         });
     </script>
 </body>

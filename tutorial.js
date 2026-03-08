@@ -5,7 +5,7 @@
     let W, H, stars = [];
 
     function resize() {
-        W = canvas.width  = window.innerWidth;
+        W = canvas.width = window.innerWidth;
         H = canvas.height = window.innerHeight;
     }
 
@@ -76,7 +76,8 @@ function goTo(n) {
     if (current === TOTAL - 1) {
         nextBtn.textContent = '🚀 開始蓋城市！';
         nextBtn.className = 'nav-btn finish';
-        nextBtn.onclick = function () { window.location.href = 'app.html'; };
+        // ── 修改：加上 ?tutorial=done 觸發解鎖動畫 ──
+        nextBtn.onclick = function () { window.location.href = 'app.html?tutorial=done'; };
     } else {
         nextBtn.textContent = '下一頁 →';
         nextBtn.className = 'nav-btn next';
@@ -114,7 +115,7 @@ function animateRunSteps() {
 // ── Quiz handler ─────────────────────────────────────────────
 function checkQuiz(id, el, correct) {
     const wrap = document.getElementById(id);
-    const fb   = document.getElementById(id + '-fb');
+    const fb = document.getElementById(id + '-fb');
     if (wrap.dataset.answered) return;
 
     wrap.dataset.answered = '1';

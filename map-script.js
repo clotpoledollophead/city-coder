@@ -16,18 +16,25 @@ function createMapCanvas() {
 }
 
 // ── Day/night keyframes ────────────────────────────────────────────────────
+// t=0.00 → midnight, t=0.5 → noon (adjusted for longer day / shorter night)
 const DAY_CYCLE = [
-    // night - ambient slightly brighter for visibility
+    // ── night (short) ──────────────────────────────────────────────────────
     { t: 0.00, sky: 0x060618, amb: 0x384270, aI: 0.22, sun: 0xff5522, sI: 0.0, elev: 0.0 },
-    { t: 0.22, sky: 0x060618, amb: 0x384270, aI: 0.22, sun: 0xff5522, sI: 0.0, elev: 0.0 },
-    { t: 0.26, sky: 0x1a0828, amb: 0x2a2060, aI: 0.18, sun: 0xff5522, sI: 0.05, elev: 0.02 },
-    { t: 0.29, sky: 0xff5500, amb: 0xff8844, aI: 0.45, sun: 0xff7722, sI: 0.8, elev: 0.12 },
-    { t: 0.33, sky: 0x87ceeb, amb: 0xfff0e0, aI: 0.65, sun: 0xffeebb, sI: 1.15, elev: 0.55 },
+    { t: 0.10, sky: 0x060618, amb: 0x384270, aI: 0.22, sun: 0xff5522, sI: 0.0, elev: 0.0 },
+    // ── pre-dawn ───────────────────────────────────────────────────────────
+    { t: 0.15, sky: 0x1a0828, amb: 0x2a2060, aI: 0.18, sun: 0xff5522, sI: 0.05, elev: 0.02 },
+    { t: 0.20, sky: 0xff5500, amb: 0xff8844, aI: 0.45, sun: 0xff7722, sI: 0.8, elev: 0.12 },
+    // ── morning ────────────────────────────────────────────────────────────
+    { t: 0.25, sky: 0x87ceeb, amb: 0xfff0e0, aI: 0.65, sun: 0xffeebb, sI: 1.15, elev: 0.55 },
+    // ── noon (longest section) ─────────────────────────────────────────────
     { t: 0.50, sky: 0x6ec6f0, amb: 0xffffff, aI: 0.80, sun: 0xfff8e0, sI: 1.5, elev: 1.0 },
-    { t: 0.67, sky: 0x87ceeb, amb: 0xfff0e0, aI: 0.65, sun: 0xffeebb, sI: 1.15, elev: 0.55 },
-    { t: 0.71, sky: 0xff5500, amb: 0xff8844, aI: 0.45, sun: 0xff7722, sI: 0.8, elev: 0.12 },
-    { t: 0.75, sky: 0x1a0828, amb: 0x2a2060, aI: 0.18, sun: 0xff4400, sI: 0.05, elev: 0.02 },
-    { t: 0.78, sky: 0x060618, amb: 0x384270, aI: 0.22, sun: 0xff3300, sI: 0.0, elev: 0.0 },
+    // ── afternoon ──────────────────────────────────────────────────────────
+    { t: 0.75, sky: 0x87ceeb, amb: 0xfff0e0, aI: 0.65, sun: 0xffeebb, sI: 1.15, elev: 0.55 },
+    // ── sunset ─────────────────────────────────────────────────────────────
+    { t: 0.80, sky: 0xff5500, amb: 0xff8844, aI: 0.45, sun: 0xff7722, sI: 0.8, elev: 0.12 },
+    { t: 0.85, sky: 0x1a0828, amb: 0x2a2060, aI: 0.18, sun: 0xff4400, sI: 0.05, elev: 0.02 },
+    // ── night ──────────────────────────────────────────────────────────────
+    { t: 0.90, sky: 0x060618, amb: 0x384270, aI: 0.22, sun: 0xff3300, sI: 0.0, elev: 0.0 },
     { t: 1.00, sky: 0x060618, amb: 0x384270, aI: 0.22, sun: 0xff5522, sI: 0.0, elev: 0.0 },
 ];
 
@@ -144,7 +151,6 @@ function init3DMap() {
     const CAM_MIN = 80, CAM_MAX = 900;
     const POLAR_MIN = 0.15, POLAR_MAX = Math.PI / 2.1;
 
-    // 擴大地圖格子數以讓島嶼變大
     const GRID = 80, TILE_W = 10, GAP = 0.15;
     const TOTAL = GRID * TILE_W;
     const OFFSET = TOTAL / 2 - TILE_W / 2;
@@ -176,7 +182,6 @@ function init3DMap() {
     // ── Island mask ────────────────────────────────────────────────────────────
     const { mask: landMask } = buildIslandMask(GRID);
 
-    // ─── 暴露給 city_library.js 使用 ────────────────────────────────────────
     window._cityScene = scene;
     window._cityLandMask = landMask;
     window._cityGrid = { GRID, TILE_W, OFFSET };
@@ -185,7 +190,6 @@ function init3DMap() {
     const sandColors = [0xd4b483, 0xc8a96e, 0xdbc07a, 0xcfb87f, 0xc9a86c];
     const tileGeo = new THREE.BoxGeometry(TILE_W - GAP, 1.0, TILE_W - GAP);
 
-    // we'll keep track of tile meshes for hover detection
     const tiles = [];
 
     for (let row = 0; row < GRID; row++) {
@@ -203,7 +207,6 @@ function init3DMap() {
             tile.castShadow = true;
             tile.userData = { row, col, originalColor: color, elev };
             scene.add(tile);
-            // add an invisible flat plane at the tile's elevation for reliable ray intersections
             const hitPlane = new THREE.Mesh(
                 new THREE.PlaneGeometry(TILE_W, TILE_W),
                 new THREE.MeshBasicMaterial({ visible: false })
@@ -223,15 +226,12 @@ function init3DMap() {
         }
     }
 
-    // create a single hover label sprite (hidden initially)
     let hoverLabel = null;
     function makeHoverLabel() {
         const canvas = document.createElement('canvas');
-        // crank up resolution to make text unmistakably large
         canvas.width = 512; canvas.height = 128;
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = 'rgba(0,0,0,0.6)';
-        // rounded rect background
         ctx.beginPath();
         ctx.moveTo(16, 0);
         ctx.lineTo(canvas.width - 16, 0);
@@ -264,7 +264,6 @@ function init3DMap() {
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = 'rgba(0,0,0,0.6)';
-        // redraw rounded rect background
         ctx.beginPath();
         const w = canvas.width, h = canvas.height, r = 16;
         ctx.moveTo(r, 0);
@@ -288,7 +287,6 @@ function init3DMap() {
         hoverLabel.visible = true;
     }
 
-    // outline selector used for lassoing effect
     const selectorGeom = new THREE.EdgesGeometry(new THREE.PlaneGeometry(TILE_W, TILE_W));
     const selectorMat = new THREE.LineBasicMaterial({ color: 0xffff00, linewidth: 2 });
     const selector = new THREE.LineSegments(selectorGeom, selectorMat);
@@ -314,10 +312,8 @@ function init3DMap() {
                 }
                 tile.material.color.setHex(0xffff00);
                 lastTile = tile;
-                // move selector outline
                 selector.position.set(tile.position.x, tile.userData.elev + 0.11, tile.position.z);
                 selector.visible = true;
-                // place label a bit higher so it floats above even tall tiles
                 updateHoverLabel(tile.userData.row, tile.userData.col, tile.position.x, tile.position.z, tile.userData.elev + 2.5);
             }
         } else {
@@ -375,7 +371,6 @@ function init3DMap() {
     const starMat = buildStars(scene);
     const { mesh: sunDisc, mat: sunMat } = buildSkyDisc(scene, 0xfff8e0, 14);
     const { mesh: moonDisc, mat: moonMat } = buildSkyDisc(scene, 0xdde8ff, 9);
-    // simple moon sphere for visibility
     const moonMesh = new THREE.Mesh(
         new THREE.SphereGeometry(12, 16, 16),
         new THREE.MeshBasicMaterial({ color: 0xffffff })
@@ -383,52 +378,58 @@ function init3DMap() {
     moonMesh.visible = false;
     scene.add(moonMesh);
 
-    const CYCLE_SECONDS = 80;
+    // ── CYCLE_SECONDS increased for slower overall cycle ──────────────────
+    // 白天佔 cycle 的 t=0.20~0.80（60%），夜晚佔 t=0.85~0.15（30%），
+    // 整體速度放慢：原 80s → 160s
+    const CYCLE_SECONDS = 160;
     const clockEl = document.getElementById('mapClock');
-    let dayT = 0.38;
+    // 從早晨 t≈0.22 開始（接近日出）
+    let dayT = 0.22;
 
     function updateDayNight(dt) {
-        dayT = (dayT + dt / CYCLE_SECONDS) % 1;
+        // ── 白天/夜晚速度差異：夜晚（elev<0.05）時加速 1.8x ──────────────
         const { lo, hi, f } = cycleLookup(dayT);
+        const curElev = lo.elev + (hi.elev - lo.elev) * f;
+        const speedMult = curElev < 0.05 ? 1.8 : 1.0;
 
-        const skyCol = lerpColor(lo.sky, hi.sky, f);
+        dayT = (dayT + (dt / CYCLE_SECONDS) * speedMult) % 1;
+
+        const cycle = cycleLookup(dayT);
+        const { lo: l, hi: hh, f: ff } = cycle;
+
+        const skyCol = lerpColor(l.sky, hh.sky, ff);
         scene.background.setRGB(skyCol.r, skyCol.g, skyCol.b);
         scene.fog.color.setRGB(skyCol.r, skyCol.g, skyCol.b);
 
-        ambientLight.color.copy(lerpColor(lo.amb, hi.amb, f));
-        ambientLight.intensity = lo.aI + (hi.aI - lo.aI) * f;
+        ambientLight.color.copy(lerpColor(l.amb, hh.amb, ff));
+        ambientLight.intensity = l.aI + (hh.aI - l.aI) * ff;
 
-        const elev = lo.elev + (hi.elev - lo.elev) * f;
+        const elev = l.elev + (hh.elev - l.elev) * ff;
         const sunAngle = dayT * Math.PI * 2 - Math.PI * 0.5;
         const SUN_R = 800;
 
-        // compute sun Y so it goes below ground when the elevation reaches zero
         let sunY = Math.sin(elev * Math.PI) * SUN_R;
         if (elev <= 0.01) {
-            // push the sun clearly below the surface to avoid any horizon artifacts
             sunY = -SUN_R * 0.7;
         }
         sun.position.set(Math.cos(sunAngle) * SUN_R * 0.7, sunY, Math.sin(sunAngle) * SUN_R * 0.4);
-        sun.color.copy(lerpColor(lo.sun, hi.sun, f));
-        sun.intensity = lo.sI + (hi.sI - lo.sI) * f;
+        sun.color.copy(lerpColor(l.sun, hh.sun, ff));
+        sun.intensity = l.sI + (hh.sI - l.sI) * ff;
         sunDisc.position.copy(sun.position).normalize().multiplyScalar(860);
         sunMat.color.copy(sun.color);
         sunDisc.visible = elev > 0.01;
 
-        // moon is always opposite the sun angle
         const moonAngle = sunAngle + Math.PI, moonElev = 1.0 - elev;
         moonLight.position.set(Math.cos(moonAngle) * SUN_R * 0.7, Math.sin(moonElev * Math.PI) * SUN_R, Math.sin(moonAngle) * SUN_R * 0.4);
         moonLight.intensity = Math.max(0, (1 - elev * 2.5)) * 0.55;
         moonDisc.position.copy(moonLight.position).normalize().multiplyScalar(860);
         moonDisc.visible = moonElev > 0.1;
-        // update moon sphere
         moonMesh.position.copy(moonLight.position).normalize().multiplyScalar(860);
         moonMesh.visible = moonElev > 0.1;
 
         starMat.opacity = Math.max(0, 1 - elev * 3.5);
         oceanMat.color.set(elev < 0.08 ? 0x061830 : 0x1a6eb5);
 
-        // ── 時鐘：顯示 1am / 2pm 格式 ──────────────────────────────
         if (clockEl) {
             const totalHours = Math.floor(dayT * 24);
             const hour12 = totalHours % 12 === 0 ? 12 : totalHours % 12;
@@ -437,8 +438,6 @@ function init3DMap() {
             clockEl.className = elev > 0.05 ? 'day' : 'night';
         }
 
-        // ── 路燈：白天關燈（elev 夠高），黃昏/夜晚點亮 ─────────────
-        // elev 0 = 深夜，0.05 = 黎明/黃昏臨界，1.0 = 正午
         const lights = window._cityStreetLights;
         if (lights && lights.length > 0) {
             const lampIntensity = Math.max(0, 1 - elev * 18) * 2.5;
