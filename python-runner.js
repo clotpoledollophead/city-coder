@@ -2,16 +2,12 @@
 
 window.PythonRunner = (function () {
 
-    // ── 已支援的函式對照表 ────────────────────────────────────────
-    // 注意：所有建築相關函式現在都必須指定 row 和 col 兩個座標參數，
-    // 否則轉譯時會報錯並跳過該行。
     const SUPPORTED_FUNCS = new Set([
         'build_house', 'build_park', 'build_library',
         'build_school', 'build_hospital', 'build_shop', 'build_road',
         'build_power_tower', 'build_fountain', 'build_streetlight', 'clear_all'
     ]);
 
-    // ── 解析 Python 字串 ──────────────────────────────────────────
     function parsePyValue(s) {
         s = s.trim();
         if (s === 'None' || s === 'null') return null;
@@ -23,13 +19,11 @@ window.PythonRunner = (function () {
         return s;
     }
 
-    // 解析函式引數 (支援 positional 和 keyword)
     function parseArgs(argsStr) {
         const positional = [];
         const keyword = {};
         if (!argsStr.trim()) return { positional, keyword };
 
-        // 用逗號切割（注意字串內不切）
         const tokens = [];
         let depth = 0, current = '', inStr = false, strChar = '';
         for (const ch of argsStr) {
@@ -55,23 +49,21 @@ window.PythonRunner = (function () {
         return { positional, keyword };
     }
 
-    // ── 把 Python 程式碼轉成 JS 函式呼叫清單 ─────────────────────
     function transpile(pyCode) {
         const lines = pyCode.split('\n');
-        const calls = [];   // { fn, args, original, lineNum }
+        const calls = [];
         const jsLines = [];
         const errors = [];
 
         for (let i = 0; i < lines.length; i++) {
             const raw = lines[i];
-            const line = raw.split('#')[0].trim();  // 去除 Python 註解
+            const line = raw.split('#')[0].trim();
 
             if (!line) {
                 jsLines.push('// (空行)');
                 continue;
             }
 
-            // 匹配函式呼叫：可能有 variable = func(...) 或直接 func(...)
             const m = line.match(/^(?:\w+\s*=\s*)?(\w+)\s*\(([^]*)\)\s*$/);
             if (!m) {
                 jsLines.push(`// ⚠ 無法解析: ${raw}`);
@@ -89,15 +81,30 @@ window.PythonRunner = (function () {
             }
 
             const { positional, keyword } = parseArgs(argsStr);
-
-            // 根據各函式的參數順序，組出引數陣列
             let finalArgs = buildFinalArgs(fnName, positional, keyword);
 
-            // 要求所有建築型函式一定要提供 row, col
             if (fnName !== 'clear_all' && (finalArgs[0] == null || finalArgs[1] == null)) {
                 jsLines.push(`// ⚠ 缺少座標: row 和 col 必須提供`);
                 errors.push({ line: i + 1, msg: `函式 "${fnName}" 需要指定 row 和 col` });
                 continue;
+            }
+
+            // ── 座標範圍檢查 ──────────────────────────────────────
+            if (fnName !== 'clear_all') {
+                const row = finalArgs[0], col = finalArgs[1];
+                if (typeof row === 'number' && typeof col === 'number') {
+                    if (row < 0 || row > 79 || col < 0 || col > 79) {
+                        jsLines.push(`// ⚠ 座標超出範圍: (${row}, ${col})`);
+                        errors.push({ line: i + 1, msg: `座標 (${row}, ${col}) 超出地圖範圍 (0–79)` });
+                        continue;
+                    }
+                    // ── 陸地檢查（在 CityLib 載入後） ────────────────
+                    if (window.CityLib && window.CityLib.isLand && !window.CityLib.isLand(row, col)) {
+                        jsLines.push(`// ⚠ 座標不在陸地上: (${row}, ${col})`);
+                        errors.push({ line: i + 1, msg: `座標 (${row}, ${col}) 不在島嶼陸地上！請懸停地圖查看可用座標。` });
+                        continue;
+                    }
+                }
             }
 
             const jsCall = `CityLib.${fnName}(${finalArgs.map(a => JSON.stringify(a)).join(', ')});`;
@@ -108,7 +115,6 @@ window.PythonRunner = (function () {
         return { calls, jsLines, errors };
     }
 
-    // 根據每個函式的簽名組合最終引數
     const FUNC_PARAMS = {
         build_house: ['row', 'col', 'floors', 'name'],
         build_park: ['row', 'col', 'name'],
@@ -119,7 +125,7 @@ window.PythonRunner = (function () {
         build_road: ['row', 'col', 'direction'],
         build_power_tower: ['row', 'col'],
         build_fountain: ['row', 'col', 'name'],
-        build_streetlight: ['row', 'col'],   // ── 新增
+        build_streetlight: ['row', 'col'],
         clear_all: [],
     };
     const FUNC_DEFAULTS = {
@@ -132,7 +138,7 @@ window.PythonRunner = (function () {
         build_road: [20, 20, 'h'],
         build_power_tower: [null, null],
         build_fountain: [null, null, ''],
-        build_streetlight: [null, null],     // ── 新增
+        build_streetlight: [null, null],
         clear_all: [],
     };
 
@@ -140,9 +146,7 @@ window.PythonRunner = (function () {
         const params = FUNC_PARAMS[fnName] || [];
         const defaults = FUNC_DEFAULTS[fnName] || [];
         const result = [...defaults];
-        // 填入 positional
         positional.forEach((v, i) => { if (i < result.length) result[i] = v; });
-        // 填入 keyword
         Object.entries(keyword).forEach(([k, v]) => {
             const idx = params.indexOf(k);
             if (idx >= 0) result[idx] = v;
@@ -150,7 +154,6 @@ window.PythonRunner = (function () {
         return result;
     }
 
-    // ── 執行轉譯結果 ──────────────────────────────────────────────
     function execute(calls) {
         const results = [];
         for (const call of calls) {
@@ -166,7 +169,6 @@ window.PythonRunner = (function () {
         return results;
     }
 
-    // ── 主要入口 ──────────────────────────────────────────────────
     function run(pyCode) {
         const { calls, jsLines, errors: parseErrors } = transpile(pyCode);
         const execResults = execute(calls.filter(c => c));
