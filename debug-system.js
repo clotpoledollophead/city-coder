@@ -25,7 +25,7 @@ window.DebugSystem = (function () {
         {
             id: 'db_parenthesis',
             wave: 0,
-            requiresLesson: 'build_house',   // 學過第 1 課才出現
+            requiresLesson: 'build_house',
             buildingTypes: ['house', 'park', 'shop'],
             title: '🔍 Debug：括號不見了！',
             intro: '這棟建築的施工紀錄出了問題！幫我找出程式碼裡的 bug。',
@@ -44,7 +44,7 @@ build_house 40, 40, name="測試屋"`,
         {
             id: 'db_string_quote',
             wave: 0,
-            requiresLesson: 'build_park',    // 學過第 2 課（變數、字串）才出現
+            requiresLesson: 'build_park',
             buildingTypes: ['school', 'library', 'hospital'],
             title: '🔍 Debug：引號不對稱！',
             intro: '工程師寫完程式碼後，建築沒有出現在地圖上。幫他找出原因！',
@@ -65,7 +65,7 @@ build_school(40, 42, name="未來中學')`,
         {
             id: 'db_indent',
             wave: 1,
-            requiresLesson: 'build_shop',    // 學過第 5 課（for 迴圈）才出現
+            requiresLesson: 'build_shop',
             buildingTypes: ['house', 'shop', 'hospital'],
             title: '🔍 Debug：縮排錯誤！',
             intro: '這個 for 迴圈只蓋了一棟房子，但應該要蓋三棟。問題在哪？',
@@ -85,7 +85,7 @@ build_house(r, 40, name="房子" + str(i))`,
         {
             id: 'db_offbyone',
             wave: 1,
-            requiresLesson: 'build_shop',    // 學過第 5 課（for + range）才出現
+            requiresLesson: 'build_shop',
             buildingTypes: ['park', 'fountain', 'library'],
             title: '🔍 Debug：差一的錯誤！',
             intro: '工程師想蓋 5 間連排商店，但執行後只出現了 4 間。找出 bug！',
@@ -107,7 +107,7 @@ for i in range(1, 5):
         {
             id: 'db_fix_code_1',
             wave: 2,
-            requiresLesson: 'build_shop',    // 學過第 5 課（for 冒號）才出現
+            requiresLesson: 'build_shop',
             buildingTypes: ['school', 'hospital', 'power_tower'],
             title: '🔧 實作 Debug：修正程式碼！',
             intro: '這段程式碼應該蓋 3 棟房子，但有 bug 無法執行。請修正它！',
@@ -130,7 +130,7 @@ for i in range(3)
         {
             id: 'db_fix_code_2',
             wave: 2,
-            requiresLesson: 'build_park',    // 學過第 2 課（變數/型別）才出現
+            requiresLesson: 'build_park',
             buildingTypes: ['library', 'fountain', 'shop'],
             title: '🔧 實作 Debug：變數計算 bug！',
             intro: '工程師想在城市中心蓋公園，但公園出現在錯誤的位置。找出並修正 bug！',
@@ -159,7 +159,6 @@ build_park(center, center + "3", name="中央公園")`,
         canvas.width = 128; canvas.height = 128;
         const ctx = canvas.getContext('2d');
 
-        // 外圓背景
         ctx.beginPath();
         ctx.arc(64, 64, 56, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(255, 200, 0, 0.92)';
@@ -168,7 +167,6 @@ build_park(center, center + "3", name="中央公園")`,
         ctx.lineWidth = 5;
         ctx.stroke();
 
-        // 驚嘆號本體
         ctx.fillStyle = '#1a1100';
         ctx.font = 'bold 72px Arial';
         ctx.textAlign = 'center';
@@ -191,18 +189,13 @@ build_park(center, center + "3", name="中央公園")`,
         const maxCount = MAX_PER_WAVE[wave] || 1;
         if (_activeMarkers.size >= maxCount) return null;
 
-        // 只保留玩家已學過對應課程的題目
-        const lessonSystem = window.LessonSystem;
-        const challenges = DEBUG_CHALLENGES.filter(c =>
-            c.wave === wave &&
-            (!c.requiresLesson || !lessonSystem || lessonSystem.isUnlocked(c.requiresLesson))
-        );
+        // ★ 修改：移除課程解鎖限制，讓題目總是可以出現
+        const challenges = DEBUG_CHALLENGES.filter(c => c.wave === wave);
         if (challenges.length === 0) return null;
 
         const registry = window._cityBuildingRegistry;
         if (!registry || registry.size === 0) return null;
 
-        // 找未被使用的建築
         const eligible = [];
         registry.forEach((data, key) => {
             if (!_shownKeys.has(key) && !_activeMarkers.has(key)) {
@@ -212,7 +205,7 @@ build_park(center, center + "3", name="中央公園")`,
         });
 
         if (eligible.length === 0) {
-            // 若無類型匹配，隨機選任何建築
+            // 若無類型匹配，隨機選任何未使用建築
             const allEligible = [];
             registry.forEach((data, key) => {
                 if (!_shownKeys.has(key) && !_activeMarkers.has(key)) {
@@ -236,14 +229,12 @@ build_park(center, center + "3", name="中央公園")`,
 
         const { key, data, matchingChals } = picked;
 
-        // 挑選一個未做過的題目
         const available = matchingChals.filter(c => !_dismissed.has(c.id));
         if (available.length === 0) return;
         const challenge = available[Math.floor(Math.random() * available.length)];
 
         const sprite = makeExclSprite(scene, data.x, data.topY + 3, data.z);
 
-        // 閃爍動畫
         let blinkT = 0;
         const blinkInterval = setInterval(() => {
             blinkT += 0.08;
@@ -255,7 +246,6 @@ build_park(center, center + "3", name="中央公園")`,
         _shownKeys.add(key);
         _activeMarkers.set(key, { sprite, challenge, blinkInterval, data });
 
-        // 點擊偵測（透過螢幕座標 raycaster）
         _pendingClick = { key };
     }
 
@@ -277,11 +267,9 @@ build_park(center, center + "3", name="中央公園")`,
             if (!_raycaster) _raycaster = new THREE.Raycaster();
             _raycaster.setFromCamera(_mouse, window._cityCamera);
 
-            // 檢查是否點到驚嘆號 sprite
             const sprites = [..._activeMarkers.values()].map(m => m.sprite);
             const hits = _raycaster.intersectObjects(sprites);
             if (hits.length > 0) {
-                // 找到哪個 key
                 _activeMarkers.forEach((markerData, key) => {
                     if (markerData.sprite === hits[0].object) {
                         openDebugModal(key);
@@ -300,7 +288,6 @@ build_park(center, center + "3", name="中央公園")`,
         const overlay = document.getElementById('debugOverlay');
         if (!overlay) return;
 
-        // 填入內容
         document.getElementById('dbTitle').textContent = challenge.title;
         document.getElementById('dbIntro').textContent = challenge.intro;
         document.getElementById('dbBugCode').textContent = challenge.bugCode;
@@ -332,7 +319,6 @@ build_park(center, center + "3", name="中央公園")`,
         overlay.classList.add('open');
         document.body.style.overflow = 'hidden';
 
-        // 儲存當前 key 給實作題用
         overlay.dataset.currentKey = key;
         overlay.dataset.challengeId = challenge.id;
     }
@@ -352,7 +338,6 @@ build_park(center, center + "3", name="中央公園")`,
             div.classList.add('wrong');
             fb.className = 'db-feedback err';
             fb.textContent = `✗ ${opt.explain}`;
-            // 高亮正確答案
             optsEl.querySelectorAll('.db-opt').forEach((o, i) => {
                 if (challenge.options[i].correct) o.classList.add('correct');
             });
@@ -398,13 +383,13 @@ build_park(center, center + "3", name="中央公園")`,
 
     // ── 建築增加時的回呼 ─────────────────────────────────────────
     function onBuildingAdded(count) {
-        // 更新波次
-        for (let w = _waveIndex; w < THRESHOLDS.length; w++) {
+        // ★ 修改：從最高波次往下找，確保 _waveIndex 正確更新
+        for (let w = THRESHOLDS.length - 1; w >= 0; w--) {
             if (count >= THRESHOLDS[w]) {
                 _waveIndex = w;
+                break;
             }
         }
-        // 有機率生成驚嘆號（稍微延遲避免太即時）
         setTimeout(() => {
             trySpawnForWave(_waveIndex);
         }, 800);
@@ -414,10 +399,9 @@ build_park(center, center + "3", name="中央公園")`,
         const maxCount = MAX_PER_WAVE[wave] || 1;
         if (_activeMarkers.size >= maxCount) return;
 
-        // 第一波：建築數達門檻後直接出現
-        // 後續波次：50% 機率出現（避免太頻繁）
-        const roll = wave === 0 ? 1 : Math.random();
-        if (roll > 0.5) return;
+        // ★ 修改：第一波 100%，後續波次 80%，大幅提高出現頻率
+        const roll = wave === 0 ? 0 : Math.random();
+        if (roll > 0.80) return;
 
         spawnMarker(wave);
     }
@@ -547,7 +531,6 @@ build_park(center, center + "3", name="中央公園")`,
     margin-bottom: 12px;
 }
 
-/* 選擇題選項 */
 .db-opts { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
 .db-opt {
     display: flex;
@@ -577,7 +560,6 @@ build_park(center, center + "3", name="中央公園")`,
     flex-shrink: 0;
 }
 
-/* 實作題 */
 .db-editor-wrap {
     border: 1px solid rgba(255,200,0,0.22);
     border-radius: 8px;
@@ -621,7 +603,6 @@ build_park(center, center + "3", name="中央公園")`,
     white-space: pre-wrap;
 }
 
-/* 回饋訊息 */
 .db-feedback {
     margin-top: 10px;
     padding: 11px 15px;
@@ -634,7 +615,6 @@ build_park(center, center + "3", name="中央公園")`,
 .db-feedback.ok  { display: block; background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.3); color: #00ff88; }
 .db-feedback.err { display: block; background: rgba(255,96,80,0.08); border: 1px solid rgba(255,96,80,0.3); color: #ff8070; }
 
-/* 按鈕 */
 .db-btn-row { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
 .db-btn {
     font-family: 'Oxanium', monospace;
@@ -653,7 +633,6 @@ build_park(center, center + "3", name="中央公園")`,
 .db-btn-done { background: #00ff88; color: #040e12; box-shadow: 0 0 14px rgba(0,255,136,0.4); margin-top: 8px; }
 .db-btn-done:hover { background: #33ffaa; box-shadow: 0 0 26px rgba(0,255,136,0.65); transform: translateY(-1px); }
 
-/* 波次提示 badge */
 #debugWaveBadge {
     position: fixed;
     top: 70px;
@@ -683,7 +662,6 @@ build_park(center, center + "3", name="中央公園")`,
     function injectModal() {
         if (document.getElementById('debugOverlay')) return;
 
-        // 波次提示 badge
         const badge = document.createElement('div');
         badge.id = 'debugWaveBadge';
         document.body.appendChild(badge);
@@ -733,11 +711,9 @@ build_park(center, center + "3", name="中央公園")`,
             </div>`;
         document.body.appendChild(overlay);
 
-        // 關閉
         document.getElementById('dbClose').addEventListener('click', closeDebugModal);
         overlay.addEventListener('click', e => { if (e.target === overlay) closeDebugModal(); });
 
-        // Tab 鍵縮排
         document.getElementById('dbCodeArea').addEventListener('keydown', e => {
             if (e.key === 'Tab') {
                 e.preventDefault();
@@ -747,7 +723,6 @@ build_park(center, center + "3", name="中央公園")`,
             }
         });
 
-        // 實作題：執行按鈕
         document.getElementById('dbRunBtn').addEventListener('click', () => {
             const overlay = document.getElementById('debugOverlay');
             const challengeId = overlay.dataset.challengeId;
@@ -774,7 +749,6 @@ build_park(center, center + "3", name="中央公園")`,
             }
         });
 
-        // 提示按鈕
         document.getElementById('dbHintBtn').addEventListener('click', () => {
             const hintBox = document.getElementById('dbHintBox');
             const overlay = document.getElementById('debugOverlay');
@@ -803,7 +777,6 @@ build_park(center, center + "3", name="中央公園")`,
         initClickDetect();
     }
 
-    // 延遲初始化（等待 DOM 和場景就緒）
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
