@@ -5,14 +5,20 @@ window.LessonSystem = (function () {
 
     // ══════════════════════════════════════════════════════════════════════
     //  課程定義（從基礎到進階）
-    //  每個 lesson 包含：
-    //    pythonLesson  — 純 Python 語法教學（不依賴 library）
-    //    quizzes       — 選擇題，全對才解鎖實作
-    //    steps         — 搭配 library 的實作說明
-    //    starterCode   — 練習區預設程式碼
-    //    successFn     — 判斷練習是否完成
+    //  解鎖順序：
+    //    第 1 課：build_house
+    //    第 2 課：build_streetlight
+    //    第 3 課：build_road
+    //    第 4 課：build_school
+    //    第 5 課：build_shop
+    //    第 6 課：build_library
+    //    第 7 課：build_hospital
+    //    第 8 課：build_fountain
+    //    第 9 課：build_power_tower
+    //    第 10 課：build_park
     // ══════════════════════════════════════════════════════════════════════
     const LESSONS = [
+        // ── 第 1 課：build_house ──────────────────────────────────────────
         {
             fnName: 'build_house',
             emoji: '🏠',
@@ -68,9 +74,11 @@ window.LessonSystem = (function () {
             ],
             successMsg: '🎉 print 和函式呼叫都掌握了！build_house 解鎖！',
         },
+
+        // ── 第 2 課：build_streetlight ────────────────────────────────────
         {
-            fnName: 'build_park',
-            emoji: '🌳',
+            fnName: 'build_streetlight',
+            emoji: '💡',
             title: '第 2 課：變數與資料型別',
             concept: '變數（Variable）· int · str',
             conceptDesc:
@@ -98,8 +106,8 @@ window.LessonSystem = (function () {
                 },
             ],
             steps: [
-                { label: '用變數存座標', content: '把中心座標存進變數，方便之後調整整個城市位置。' },
-                { label: '偏移座標', content: '<code>build_park(r + 1, c)</code> 在 r 的下一格蓋公園，不用算新數字。' },
+                { label: '路燈夜晚發光', content: '路燈在夜晚自動點亮！沿著道路每隔 2 格放一盞，城市夜景更漂亮。' },
+                { label: '用變數存座標', content: '把位置存進變數，方便之後調整路燈位置。' },
             ],
             challenges: [
                 {
@@ -115,14 +123,16 @@ window.LessonSystem = (function () {
                     errMsg: '建立字串變數，再用 print 印出來！',
                 },
                 {
-                    q: '【挑戰】用變數 r = 40, c = 40，呼叫 build_park(r + 1, c)，在地圖上蓋一座公園',
+                    q: '【挑戰】用變數 r = 40, c = 41，呼叫 build_streetlight(r, c)，在地圖上蓋一盞路燈',
                     hint: null,
-                    check: (code) => /\w+\s*=\s*40/.test(code) && /build_park\s*\(/.test(code),
-                    errMsg: '先用變數存座標，再用 build_park(r+1, c) 蓋公園！',
+                    check: (code) => /\w+\s*=\s*\d+/.test(code) && /build_streetlight\s*\(/.test(code),
+                    errMsg: '先用變數存座標，再用 build_streetlight(r, c) 蓋路燈！',
                 },
             ],
-            successMsg: '🌳 變數掌握了！build_park 解鎖！',
+            successMsg: '💡 變數掌握了！build_streetlight 解鎖！',
         },
+
+        // ── 第 3 課：build_road ───────────────────────────────────────────
         {
             fnName: 'build_road',
             emoji: '🛣️',
@@ -178,6 +188,8 @@ window.LessonSystem = (function () {
             ],
             successMsg: '🛣️ 字串操作學會了！build_road 解鎖！',
         },
+
+        // ── 第 4 課：build_school ─────────────────────────────────────────
         {
             fnName: 'build_school',
             emoji: '🏫',
@@ -240,6 +252,8 @@ window.LessonSystem = (function () {
             ],
             successMsg: '🏫 條件判斷掌握了！build_school 解鎖！',
         },
+
+        // ── 第 5 課：build_shop ───────────────────────────────────────────
         {
             fnName: 'build_shop',
             emoji: '🏪',
@@ -296,6 +310,8 @@ window.LessonSystem = (function () {
             ],
             successMsg: '🏪 for 迴圈超強！build_shop 解鎖！',
         },
+
+        // ── 第 6 課：build_library ────────────────────────────────────────
         {
             fnName: 'build_library',
             emoji: '📖',
@@ -352,6 +368,8 @@ window.LessonSystem = (function () {
             ],
             successMsg: '📖 while 迴圈學會了！build_library 解鎖！',
         },
+
+        // ── 第 7 課：build_hospital ───────────────────────────────────────
         {
             fnName: 'build_hospital',
             emoji: '🏥',
@@ -408,6 +426,8 @@ window.LessonSystem = (function () {
             ],
             successMsg: '🏥 串列掌握！build_hospital 解鎖！',
         },
+
+        // ── 第 8 課：build_fountain ───────────────────────────────────────
         {
             fnName: 'build_fountain',
             emoji: '⛲',
@@ -472,6 +492,8 @@ window.LessonSystem = (function () {
             ],
             successMsg: '⛲ 自訂函式是程式設計的精髓！build_fountain 解鎖！',
         },
+
+        // ── 第 9 課：build_power_tower ────────────────────────────────────
         {
             fnName: 'build_power_tower',
             emoji: '⚡',
@@ -527,9 +549,11 @@ window.LessonSystem = (function () {
             ],
             successMsg: '⚡ 字典超實用！build_power_tower 解鎖！',
         },
+
+        // ── 第 10 課：build_park ──────────────────────────────────────────
         {
-            fnName: 'build_streetlight',
-            emoji: '💡',
+            fnName: 'build_park',
+            emoji: '🌳',
             title: '第 10 課：綜合挑戰',
             concept: '綜合應用 · 程式設計思維',
             conceptDesc:
@@ -556,7 +580,7 @@ window.LessonSystem = (function () {
                 },
             ],
             steps: [
-                { label: '路燈夜晚發光', content: '路燈在夜晚自動點亮！沿著道路每隔 2 格放一盞，城市夜景更漂亮。' },
+                { label: '公園裝點城市', content: '在城市各處種植公園，為居民提供休憩空間。' },
                 { label: '完整城市', content: '結合所有學過的語法，用函式包裝各個區域，用字典管理設施清單。' },
             ],
             challenges: [
@@ -574,19 +598,19 @@ window.LessonSystem = (function () {
                     errMsg: '字典串列 + if/elif 判斷 type + 呼叫對應建築函式！',
                 },
                 {
-                    q: '【終極挑戰】結合所有語法（def、for、while 或 if、list、dict）設計一座完整城市，必須包含 build_streetlight',
+                    q: '【終極挑戰】結合所有語法（def、for、while 或 if、list、dict）設計一座完整城市，必須包含 build_park',
                     hint: null,
                     check: (code) => {
                         const hasStructure = /def\s+\w+/.test(code) && /for\s+\w+/.test(code) && /\bif\b/.test(code);
                         const hasData = /\[/.test(code);
-                        const hasStreetlight = /build_streetlight/.test(code);
+                        const hasPark = /build_park/.test(code);
                         const lineCount = code.split('\n').filter(l => l.trim() && !l.trim().startsWith('#')).length;
-                        return hasStructure && hasData && hasStreetlight && lineCount >= 8;
+                        return hasStructure && hasData && hasPark && lineCount >= 8;
                     },
-                    errMsg: '需要 def 函式、for 迴圈、if 判斷、串列或字典，加上 build_streetlight，且至少 8 行有效程式碼！',
+                    errMsg: '需要 def 函式、for 迴圈、if 判斷、串列或字典，加上 build_park，且至少 8 行有效程式碼！',
                 },
             ],
-            successMsg: '💡 恭喜完成所有課程！你是真正的城市工程師！🏆',
+            successMsg: '🌳 恭喜完成所有課程！你是真正的城市工程師！🏆',
         },
     ];
 
@@ -635,7 +659,6 @@ window.LessonSystem = (function () {
     function resetAll() {
         deleteCookie(STORAGE_KEY);
         deleteCookie(MAP_KEY);
-        // Also clear localStorage in case old data exists
         try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignore */ }
     }
 
@@ -643,7 +666,7 @@ window.LessonSystem = (function () {
     function unlock(fn) { unlockedSet.add(fn); saveUnlocked(); }
 
     // ══════════════════════════════════════════════════════════════════════
-    //  Reorder lib cards to match LESSONS order (fixes the "jumping" issue)
+    //  Reorder lib cards
     // ══════════════════════════════════════════════════════════════════════
     function reorderLibCards() {
         const body = document.getElementById('libBody');
@@ -721,7 +744,7 @@ window.LessonSystem = (function () {
 .ls-tab.done::after{content:' ✓';}
 .ls-tab.locked-tab{color:rgba(100,100,100,0.4);cursor:not-allowed;}
 
-.ls-body{padding:20px 26px;}
+.ls-body{padding:20px 26px 80px;}
 .ls-phase{display:none;}
 .ls-phase.active{display:block;}
 
@@ -797,8 +820,8 @@ window.LessonSystem = (function () {
 .ls-editor-bar .dot-y{width:7px;height:7px;border-radius:50%;background:#ffbd2e;}
 .ls-editor-bar .dot-g{width:7px;height:7px;border-radius:50%;background:#28ca41;}
 #lessonCodeArea{
-    width:100%; min-height:150px; background:#08080f; color:#00ff88;
-    font-family:'Oxanium',monospace; font-size:13px; line-height:1.75;
+    width:100%; min-height:120px; background:#08080f; color:#00ff88;
+    font-family:'Oxanium',monospace; font-size:13px; line-height:1.85;
     padding:12px 16px; border:none; outline:none; resize:vertical; tab-size:4;
 }
 #lessonCodeArea::placeholder{color:rgba(0,255,136,0.18);}
@@ -928,7 +951,13 @@ window.LessonSystem = (function () {
                                 <span style="margin-left:4px;">city_builder.py — 練習區</span>
                                 <button class="ls-hint-toggle" id="lsHintToggle" style="margin-left:auto;">💡 提示</button>
                             </div>
-                            <textarea id="lessonCodeArea" spellcheck="false" placeholder="在這裡撰寫你的 Python 程式碼…"></textarea>
+                            <textarea id="lessonCodeArea" spellcheck="false" placeholder="# 在這裡撰寫你的 Python 程式碼…
+# 使用規則：
+#   - 座標格式：build_xxx(row, col)，row 是列，col 是欄（皆為 0–79 的整數）
+#   - 有效陸地範圍約 row 25–55, col 25–55（確切邊界依地形而定）
+#   - 用 # 開頭可寫註解，程式不會執行該行
+#   - 縮排請用 4 個空格（Tab 鍵會自動補齊）
+"></textarea>
                         </div>
                         <div class="ls-btn-row">
                             <button class="ls-btn ls-btn-run" id="lsRunBtn">▶ 執行並測試</button>
@@ -1001,6 +1030,7 @@ window.LessonSystem = (function () {
         });
         if (phase === 1) renderQuiz();
         if (phase === 2) renderChallenge();
+        document.getElementById('lessonModal').scrollTop = 0;
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -1033,7 +1063,6 @@ window.LessonSystem = (function () {
                 </div>
             </div>`;
 
-        // Bind clicks for unanswered options
         if (!isAnswered) {
             document.querySelectorAll('#lsQuizArea .ls-quiz-opt').forEach(opt => {
                 opt.addEventListener('click', () => answerQuiz(parseInt(opt.dataset.qi), parseInt(opt.dataset.i)));
@@ -1053,7 +1082,6 @@ window.LessonSystem = (function () {
         const lesson = LESSONS[_state.lessonIdx];
         renderQuiz();
 
-        // Check if all questions have been answered
         if (_state.quizAnswers.filter(x => x !== undefined).length < lesson.quizzes.length) return;
 
         const allRight = lesson.quizzes.every((q, i) => _state.quizAnswers[i] === q.ans);
@@ -1064,7 +1092,6 @@ window.LessonSystem = (function () {
             document.getElementById('lsQuizDoneBtn').style.display = 'inline-flex';
             document.getElementById('lsQuizRetryBtn').style.display = 'none';
         } else {
-            // Wrong answers: show retry button, DO NOT allow skipping
             setTimeout(() => {
                 document.getElementById('lsQuizRetryBtn').style.display = 'inline-flex';
             }, 400);
@@ -1086,7 +1113,6 @@ window.LessonSystem = (function () {
         const chal = chals[ci];
         const hasHint = !!chal.hint;
 
-        // Progress dots
         const progEl = document.getElementById('lsChalProgress');
         progEl.innerHTML = chals.map((c, i) => {
             const isDone = _state.chalPassed[i];
@@ -1094,7 +1120,6 @@ window.LessonSystem = (function () {
             const connector = i > 0 ? `<div class="ls-chal-connector ${_state.chalPassed[i - 1] ? 'done' : ''}"></div>` : '';
             return `${connector}<div class="ls-chal-dot ${isDone ? 'done' : isActive ? 'active' : 'locked-dot'}" data-ci="${i}">${isDone ? '✓' : i + 1}</div>`;
         }).join('');
-        // Allow clicking done dots to review
         progEl.querySelectorAll('.ls-chal-dot.done').forEach(dot => {
             dot.addEventListener('click', () => {
                 _state.chalIdx = parseInt(dot.dataset.ci);
@@ -1102,10 +1127,8 @@ window.LessonSystem = (function () {
             });
         });
 
-        // Question
         document.getElementById('lsChalHeader').textContent = chal.q;
 
-        // Hint toggle
         const hintToggle = document.getElementById('lsHintToggle');
         const hintBox = document.getElementById('lsHintBox');
         hintBox.style.display = 'none';
@@ -1124,8 +1147,14 @@ window.LessonSystem = (function () {
             hintToggle.onclick = () => showToast('這題沒有提示，靠你自己！💪');
         }
 
-        // Clear code area and feedback
-        document.getElementById('lessonCodeArea').value = '';
+        const commentHeader = `# ── 使用規則 ──────────────────────────────────────────
+# build_xxx(row, col)  →  row 是列，col 是欄（整數 0–79）
+# 有效陸地約 row 25–55, col 25–55（懸停地圖可查座標）
+# 用 # 開頭寫注解，程式不會執行該行
+# Tab 鍵 → 自動縮排 4 格
+# ──────────────────────────────────────────────────────
+`;
+        document.getElementById('lessonCodeArea').value = commentHeader;
         document.getElementById('lsFeedback').className = 'ls-feedback';
     }
 
@@ -1154,19 +1183,18 @@ window.LessonSystem = (function () {
 
         document.getElementById('lsFeedback').className = 'ls-feedback';
 
-        // Reset tabs & phases
         [0, 1, 2].forEach(i => {
             const tab = document.getElementById(`lsTab${i}`);
             tab.className = 'ls-tab' + (i === 0 ? ' active' : i === 2 ? ' locked-tab' : '');
             document.getElementById(`lsPhase${i}`).classList.toggle('active', i === 0);
         });
-        // Reset quiz nav buttons
         document.getElementById('lsQuizNextBtn').style.display = 'none';
         document.getElementById('lsQuizDoneBtn').style.display = 'none';
         document.getElementById('lsQuizRetryBtn').style.display = 'none';
 
         document.getElementById('lessonOverlay').classList.add('open');
         document.body.style.overflow = 'hidden';
+        document.getElementById('lessonModal').scrollTop = 0;
     }
 
     function closeModal() {
@@ -1185,7 +1213,6 @@ window.LessonSystem = (function () {
         const code = document.getElementById('lessonCodeArea').value.trim();
         const fb = document.getElementById('lsFeedback');
 
-        // Always run the code on the city map
         if (window.PythonRunner && window.CityLib) {
             try { window.PythonRunner.run(code); } catch (e) { /* ignore */ }
         }
@@ -1197,21 +1224,22 @@ window.LessonSystem = (function () {
         }
 
         if (chal.check(code)) {
-            // Mark this challenge as passed
             _state.chalPassed[ci] = true;
-            renderChallenge(); // refresh dots
+            renderChallenge();
 
             const isLast = ci === chals.length - 1;
             if (isLast) {
-                // All challenges done — show final unlock button
                 fb.className = 'ls-feedback ok';
                 fb.innerHTML = `${lesson.successMsg}<br><br>
                     <button class="ls-btn ls-btn-run" id="lsConfirmBtn" style="margin-top:6px;">✓ 完成並解鎖！</button>`;
                 document.getElementById('lsConfirmBtn').addEventListener('click', () => {
                     doUnlock(lesson.fnName); closeModal();
                 });
+                setTimeout(() => {
+                    const modal = document.getElementById('lessonModal');
+                    modal.scrollTop = modal.scrollHeight;
+                }, 100);
             } else {
-                // Advance to next challenge after short delay
                 fb.className = 'ls-feedback ok';
                 fb.textContent = `✓ 第 ${ci + 1} 題通過！繼續下一題 →`;
                 setTimeout(() => {
@@ -1224,6 +1252,10 @@ window.LessonSystem = (function () {
         } else {
             fb.className = 'ls-feedback err';
             fb.textContent = `😅 ${chal.errMsg}`;
+            setTimeout(() => {
+                const modal = document.getElementById('lessonModal');
+                modal.scrollTop = modal.scrollHeight;
+            }, 100);
         }
     }
 
@@ -1369,7 +1401,6 @@ window.LessonSystem = (function () {
             libLabel.after(prog);
         }
 
-        // ── 重排卡片順序，使其與 LESSONS 一致 ──
         reorderLibCards();
 
         const fromTutorial = new URLSearchParams(window.location.search).get('tutorial') === 'done';

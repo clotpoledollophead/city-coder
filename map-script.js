@@ -16,24 +16,16 @@ function createMapCanvas() {
 }
 
 // ── Day/night keyframes ────────────────────────────────────────────────────
-// t=0.00 → midnight, t=0.5 → noon (adjusted for longer day / shorter night)
 const DAY_CYCLE = [
-    // ── night (short) ──────────────────────────────────────────────────────
     { t: 0.00, sky: 0x060618, amb: 0x384270, aI: 0.22, sun: 0xff5522, sI: 0.0, elev: 0.0 },
     { t: 0.10, sky: 0x060618, amb: 0x384270, aI: 0.22, sun: 0xff5522, sI: 0.0, elev: 0.0 },
-    // ── pre-dawn ───────────────────────────────────────────────────────────
     { t: 0.15, sky: 0x1a0828, amb: 0x2a2060, aI: 0.18, sun: 0xff5522, sI: 0.05, elev: 0.02 },
     { t: 0.20, sky: 0xff5500, amb: 0xff8844, aI: 0.45, sun: 0xff7722, sI: 0.8, elev: 0.12 },
-    // ── morning ────────────────────────────────────────────────────────────
     { t: 0.25, sky: 0x87ceeb, amb: 0xfff0e0, aI: 0.65, sun: 0xffeebb, sI: 1.15, elev: 0.55 },
-    // ── noon (longest section) ─────────────────────────────────────────────
     { t: 0.50, sky: 0x6ec6f0, amb: 0xffffff, aI: 0.80, sun: 0xfff8e0, sI: 1.5, elev: 1.0 },
-    // ── afternoon ──────────────────────────────────────────────────────────
     { t: 0.75, sky: 0x87ceeb, amb: 0xfff0e0, aI: 0.65, sun: 0xffeebb, sI: 1.15, elev: 0.55 },
-    // ── sunset ─────────────────────────────────────────────────────────────
     { t: 0.80, sky: 0xff5500, amb: 0xff8844, aI: 0.45, sun: 0xff7722, sI: 0.8, elev: 0.12 },
     { t: 0.85, sky: 0x1a0828, amb: 0x2a2060, aI: 0.18, sun: 0xff4400, sI: 0.05, elev: 0.02 },
-    // ── night ──────────────────────────────────────────────────────────────
     { t: 0.90, sky: 0x060618, amb: 0x384270, aI: 0.22, sun: 0xff3300, sI: 0.0, elev: 0.0 },
     { t: 1.00, sky: 0x060618, amb: 0x384270, aI: 0.22, sun: 0xff5522, sI: 0.0, elev: 0.0 },
 ];
@@ -144,6 +136,9 @@ function init3DMap() {
     // ── Camera ─────────────────────────────────────────────────────────────────
     const w = container.clientWidth, h = container.clientHeight;
     const camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 3000);
+
+    // ── Export camera for debug system raycasting ──────────────────────────────
+    window._cityCamera = camera;
 
     let camDist = 400, polar = Math.PI / 4, azimuth = Math.PI / 4;
     let panX = 0, panZ = 0;
@@ -378,21 +373,21 @@ function init3DMap() {
     moonMesh.visible = false;
     scene.add(moonMesh);
 
-    // ── CYCLE_SECONDS increased for slower overall cycle ──────────────────
-    // 白天佔 cycle 的 t=0.20~0.80（60%），夜晚佔 t=0.85~0.15（30%），
-    // 整體速度放慢：原 80s → 160s
     const CYCLE_SECONDS = 160;
     const clockEl = document.getElementById('mapClock');
-    // 從早晨 t≈0.22 開始（接近日出）
     let dayT = 0.22;
 
     function updateDayNight(dt) {
-        // ── 白天/夜晚速度差異：夜晚（elev<0.05）時加速 1.8x ──────────────
-        const { lo, hi, f } = cycleLookup(dayT);
-        const curElev = lo.elev + (hi.elev - lo.elev) * f;
-        const speedMult = curElev < 0.05 ? 1.8 : 1.0;
-
-        dayT = (dayT + (dt / CYCLE_SECONDS) * speedMult) % 1;
+        // 若 build_streetlight 尚未解鎖，凍結在白天（dayT = 0.50 = 正午）
+        const streetlightUnlocked = window.LessonSystem && window.LessonSystem.isUnlocked('build_streetlight');
+        if (!streetlightUnlocked) {
+            dayT = 0.50;
+        } else {
+            const { lo, hi, f } = cycleLookup(dayT);
+            const curElev = lo.elev + (hi.elev - lo.elev) * f;
+            const speedMult = curElev < 0.05 ? 1.8 : 1.0;
+            dayT = (dayT + (dt / CYCLE_SECONDS) * speedMult) % 1;
+        }
 
         const cycle = cycleLookup(dayT);
         const { lo: l, hi: hh, f: ff } = cycle;

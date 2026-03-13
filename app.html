@@ -19,7 +19,10 @@
         /* ── UI Guide Panel ──────────────────────────────────────── */
         #uiGuidePanel {
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             z-index: 50;
             background: rgba(4, 8, 28, 0.92);
             backdrop-filter: blur(8px);
@@ -29,55 +32,93 @@
             animation: guideFadeIn 0.4s ease;
             border-radius: 4px;
         }
+
         @keyframes guideFadeIn {
-            from { opacity: 0; }
-            to   { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
-        #uiGuidePanel.hidden { display: none; }
+
+        #uiGuidePanel.hidden {
+            display: none;
+        }
 
         .guide-card {
             background: linear-gradient(145deg, #080d22 0%, #0f1530 100%);
             border: 1.5px solid rgba(0, 255, 136, 0.3);
             border-radius: 14px;
-            padding: 28px 32px 24px;
+            padding: 36px 32px 36px;
             max-width: 520px;
             width: 92%;
-            box-shadow: 0 0 60px rgba(0,255,136,0.1), 0 20px 60px rgba(0,0,0,0.7);
-            animation: guideCardIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 0 60px rgba(0, 255, 136, 0.1), 0 20px 60px rgba(0, 0, 0, 0.7);
+            animation: guideCardIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 255, 136, 0.3) transparent;
         }
+
+        .guide-card::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .guide-card::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .guide-card::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 136, 0.3);
+            border-radius: 3px;
+        }
+
         @keyframes guideCardIn {
-            from { opacity:0; transform:scale(0.88) translateY(20px); }
-            to   { opacity:1; transform:scale(1) translateY(0); }
+            from {
+                opacity: 0;
+                transform: scale(0.88) translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
         }
+
         .guide-title {
             font-family: 'Jersey 15', sans-serif;
             font-size: 1.6rem;
             color: #00ffff;
             letter-spacing: 2px;
-            text-shadow: 0 0 12px rgba(0,255,255,0.4);
+            text-shadow: 0 0 12px rgba(0, 255, 255, 0.4);
             margin-bottom: 6px;
         }
+
         .guide-subtitle {
             font-family: 'Oxanium', monospace;
             font-size: 0.72rem;
             letter-spacing: 2px;
             text-transform: uppercase;
-            color: rgba(245,166,35,0.7);
-            margin-bottom: 20px;
-            display: block;
+            color: rgba(245, 166, 35, 0.7);
+            margin-bottom: 28px;
         }
+
         .guide-sections {
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 14px;
+            margin-bottom: 28px;
         }
+
         .guide-section {
-            background: rgba(0,255,136,0.04);
-            border: 1px solid rgba(0,255,136,0.15);
+            background: rgba(0, 255, 136, 0.04);
+            border: 1px solid rgba(0, 255, 136, 0.15);
             border-radius: 9px;
-            padding: 11px 14px;
+            padding: 16px 14px;
         }
+
         .guide-section-title {
             font-family: 'Oxanium', monospace;
             font-size: 0.72rem;
@@ -90,20 +131,23 @@
             align-items: center;
             gap: 7px;
         }
+
         .guide-items {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 9px;
         }
+
         .guide-item {
             display: flex;
             align-items: flex-start;
             gap: 10px;
             font-family: 'Oxanium', sans-serif;
             font-size: 0.82rem;
-            color: rgba(200,240,255,0.8);
+            color: rgba(200, 240, 255, 0.8);
             line-height: 1.6;
         }
+
         .guide-item .gi-key {
             font-family: 'Oxanium', monospace;
             font-size: 0.72rem;
@@ -112,27 +156,48 @@
             white-space: nowrap;
             flex-shrink: 0;
         }
-        .gi-key.green  { background:rgba(0,255,136,0.12); color:#00ff88; border:1px solid rgba(0,255,136,0.3); }
-        .gi-key.orange { background:rgba(245,166,35,0.12); color:#f5a623; border:1px solid rgba(245,166,35,0.3); }
-        .gi-key.blue   { background:rgba(78,168,212,0.12); color:#4ea8d4; border:1px solid rgba(78,168,212,0.3); }
-        .gi-key.pink   { background:rgba(255,0,110,0.1); color:#ff6ea0; border:1px solid rgba(255,0,110,0.3); }
+
+        .gi-key.green {
+            background: rgba(0, 255, 136, 0.12);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .gi-key.orange {
+            background: rgba(245, 166, 35, 0.12);
+            color: #f5a623;
+            border: 1px solid rgba(245, 166, 35, 0.3);
+        }
+
+        .gi-key.blue {
+            background: rgba(78, 168, 212, 0.12);
+            color: #4ea8d4;
+            border: 1px solid rgba(78, 168, 212, 0.3);
+        }
+
+        .gi-key.pink {
+            background: rgba(255, 0, 110, 0.1);
+            color: #ff6ea0;
+            border: 1px solid rgba(255, 0, 110, 0.3);
+        }
 
         .guide-tip-box {
-            background: rgba(245,166,35,0.06);
-            border: 1px solid rgba(245,166,35,0.25);
+            background: rgba(245, 166, 35, 0.06);
+            border: 1px solid rgba(245, 166, 35, 0.25);
             border-left: 3px solid #f5a623;
             border-radius: 7px;
-            padding: 9px 14px;
+            padding: 14px 14px;
             font-family: 'Oxanium', sans-serif;
             font-size: 0.82rem;
-            color: rgba(255,240,200,0.85);
+            color: rgba(255, 240, 200, 0.85);
             line-height: 1.65;
             margin-bottom: 18px;
         }
+
         .guide-tip-box code {
             font-family: 'Oxanium', monospace;
             font-size: 0.78rem;
-            background: rgba(245,166,35,0.15);
+            background: rgba(245, 166, 35, 0.15);
             color: #f5a623;
             padding: 1px 5px;
             border-radius: 3px;
@@ -143,6 +208,7 @@
             gap: 10px;
             align-items: center;
         }
+
         .guide-start-btn {
             font-family: 'Oxanium', monospace;
             font-size: 0.9rem;
@@ -154,26 +220,32 @@
             cursor: pointer;
             background: #00ff88;
             color: #040e12;
-            box-shadow: 0 0 16px rgba(0,255,136,0.4);
+            box-shadow: 0 0 16px rgba(0, 255, 136, 0.4);
             transition: all 0.15s;
         }
+
         .guide-start-btn:hover {
             background: #33ffaa;
-            box-shadow: 0 0 28px rgba(0,255,136,0.65);
+            box-shadow: 0 0 28px rgba(0, 255, 136, 0.65);
             transform: translateY(-1px);
         }
+
         .guide-no-show {
             font-family: 'Oxanium', monospace;
             font-size: 0.72rem;
-            color: rgba(0,255,136,0.3);
+            color: rgba(0, 255, 136, 0.3);
             background: transparent;
-            border: 1px solid rgba(0,255,136,0.15);
+            border: 1px solid rgba(0, 255, 136, 0.15);
             padding: 8px 14px;
             border-radius: 7px;
             cursor: pointer;
             transition: all 0.15s;
         }
-        .guide-no-show:hover { color: rgba(0,255,136,0.6); border-color: rgba(0,255,136,0.35); }
+
+        .guide-no-show:hover {
+            color: rgba(0, 255, 136, 0.6);
+            border-color: rgba(0, 255, 136, 0.35);
+        }
 
         /* ── Guide toggle button (always visible) ──────────────── */
         #btnGuide {
@@ -184,27 +256,29 @@
             padding: 5px 12px;
             border-radius: 6px;
             background: transparent;
-            border: 1px solid rgba(0,255,136,0.3);
-            color: rgba(0,255,136,0.5);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: rgba(0, 255, 136, 0.5);
             cursor: pointer;
             transition: all 0.15s;
             white-space: nowrap;
         }
+
         #btnGuide:hover {
             color: #00ff88;
             border-color: #00ff88;
-            background: rgba(0,255,136,0.08);
+            background: rgba(0, 255, 136, 0.08);
         }
 
         /* ── Clear Code button ──────────────────────────────────── */
         .btn-clear-code {
             background: transparent !important;
             color: #4ea8d4 !important;
-            border: 1px solid rgba(78,168,212,0.45) !important;
+            border: 1px solid rgba(78, 168, 212, 0.45) !important;
         }
+
         .btn-clear-code:hover {
-            background: rgba(78,168,212,0.1) !important;
-            box-shadow: 0 0 10px rgba(78,168,212,0.25) !important;
+            background: rgba(78, 168, 212, 0.1) !important;
+            box-shadow: 0 0 10px rgba(78, 168, 212, 0.25) !important;
         }
 
         /* ── Confirm dialogs (shared base) ─────────────────────── */
@@ -216,30 +290,47 @@
             background: #080d22;
             border-radius: 8px;
             padding: 10px 14px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.7);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
             font-family: 'Oxanium', monospace;
             font-size: 0.78rem;
-            color: rgba(200,240,255,0.8);
+            color: rgba(200, 240, 255, 0.8);
             white-space: nowrap;
-            animation: popIn 0.18s cubic-bezier(0.34,1.56,0.64,1);
+            animation: popIn 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
+
         @keyframes popIn {
-            from { opacity:0; transform:translateY(6px) scale(0.95); }
-            to   { opacity:1; transform:translateY(0)  scale(1); }
+            from {
+                opacity: 0;
+                transform: translateY(6px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
-        .confirm-popup.visible { display: flex; gap: 10px; align-items: center; }
+
+        .confirm-popup.visible {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
 
         /* Clear Code — blue accent */
         #clearCodeConfirm {
             left: 10px;
-            border: 1px solid rgba(78,168,212,0.4);
+            border: 1px solid rgba(78, 168, 212, 0.4);
         }
+
         /* Clear Map — red/pink accent */
         #clearMapConfirm {
             right: 10px;
-            border: 1px solid rgba(255,80,100,0.4);
+            border: 1px solid rgba(255, 80, 100, 0.4);
         }
-        #clearMapConfirm span { color: rgba(255,200,210,0.85); }
+
+        #clearMapConfirm span {
+            color: rgba(255, 200, 210, 0.85);
+        }
 
         .cc-btn {
             font-family: 'Oxanium', monospace;
@@ -251,15 +342,39 @@
             cursor: pointer;
             transition: all 0.12s;
         }
+
         /* Blue variant (code) */
-        .cc-btn-yes        { background: rgba(78,168,212,0.2);  color: #4ea8d4; border: 1px solid rgba(78,168,212,0.4); }
-        .cc-btn-yes:hover  { background: rgba(78,168,212,0.38); }
+        .cc-btn-yes {
+            background: rgba(78, 168, 212, 0.2);
+            color: #4ea8d4;
+            border: 1px solid rgba(78, 168, 212, 0.4);
+        }
+
+        .cc-btn-yes:hover {
+            background: rgba(78, 168, 212, 0.38);
+        }
+
         /* Red variant (map) */
-        .cc-btn-yes-red        { background: rgba(255,80,100,0.18); color: #ff6070; border: 1px solid rgba(255,80,100,0.4); }
-        .cc-btn-yes-red:hover  { background: rgba(255,80,100,0.35); }
+        .cc-btn-yes-red {
+            background: rgba(255, 80, 100, 0.18);
+            color: #ff6070;
+            border: 1px solid rgba(255, 80, 100, 0.4);
+        }
+
+        .cc-btn-yes-red:hover {
+            background: rgba(255, 80, 100, 0.35);
+        }
+
         /* Cancel shared */
-        .cc-btn-no  { background: transparent; color: rgba(200,240,255,0.35); border: 1px solid rgba(255,255,255,0.1); }
-        .cc-btn-no:hover { color: rgba(200,240,255,0.7); }
+        .cc-btn-no {
+            background: transparent;
+            color: rgba(200, 240, 255, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .cc-btn-no:hover {
+            color: rgba(200, 240, 255, 0.7);
+        }
     </style>
 </head>
 
@@ -312,14 +427,14 @@
                 <div id="clearCodeConfirm" class="confirm-popup">
                     <span>確定清除程式碼？</span>
                     <button class="cc-btn cc-btn-yes" id="ccYes">清除</button>
-                    <button class="cc-btn cc-btn-no"  id="ccNo">取消</button>
+                    <button class="cc-btn cc-btn-no" id="ccNo">取消</button>
                 </div>
 
                 <!-- Confirm popup for clearing map -->
                 <div id="clearMapConfirm" class="confirm-popup">
                     <span>確定清除地圖？</span>
                     <button class="cc-btn cc-btn-yes-red" id="cmYes">清除</button>
-                    <button class="cc-btn cc-btn-no"      id="cmNo">取消</button>
+                    <button class="cc-btn cc-btn-no" id="cmNo">取消</button>
                 </div>
             </div>
 
@@ -403,6 +518,10 @@
                                     <span class="gi-key green">懸停</span>
                                     <span>滑鼠移到格子上會顯示該格的 <b>row, col</b> 座標</span>
                                 </div>
+                                <div class="guide-item">
+                                    <span class="gi-key orange">⚠️ 驚嘆號</span>
+                                    <span>蓋了一些建築後，部分建築上方會出現閃爍驚嘆號，點擊開始 Debug 挑戰！</span>
+                                </div>
                             </div>
                         </div>
 
@@ -447,6 +566,7 @@
     <script src="city_library.js"></script>
     <script src="python-runner.js"></script>
     <script src="lesson-system.js"></script>
+    <script src="debug-system.js"></script>
 
     <script>
         // ═══════════════════════════════════════════════════════════════
@@ -678,7 +798,7 @@
 
         document.getElementById('guideStartBtn').addEventListener('click', hideGuide);
         document.getElementById('guideNoShow').addEventListener('click', () => {
-            try { localStorage.setItem(GUIDE_KEY, '1'); } catch(e) {}
+            try { localStorage.setItem(GUIDE_KEY, '1'); } catch (e) { }
             hideGuide();
         });
         document.getElementById('btnGuide').addEventListener('click', showGuide);
@@ -715,7 +835,7 @@
 
             // Show guide on first visit (or always if not suppressed)
             let suppressed = false;
-            try { suppressed = localStorage.getItem(GUIDE_KEY) === '1'; } catch(e) {}
+            try { suppressed = localStorage.getItem(GUIDE_KEY) === '1'; } catch (e) { }
             if (!suppressed) {
                 showGuide();
             }
