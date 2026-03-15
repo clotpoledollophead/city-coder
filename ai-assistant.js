@@ -1,6 +1,6 @@
 window.AIAssistant = (function () {
 
-    const WORKER_URL = 'api/chat';
+    const WORKER_URL = '/api/chat';
 
     const SYSTEM_PROMPT = `你是 CodeScape 未來程市的 AI 助手「科科」。
 你的工作是幫助玩家學習 Python，並在這個城市建造遊戲中提供支援。
