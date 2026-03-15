@@ -576,6 +576,13 @@
         const STARTER_CODE = `# CodeScape：未來程市 🏙️
 # 撰寫 Python，按 ▶ 執行，即可在右側地圖建造城市！
 # 點擊左下角函式庫的卡片可完成教學並解鎖對應函式。
+#
+# ── 使用規則 ──────────────────────────────────────────
+# build_xxx(row, col)  →  row 是列，col 是欄（整數 0–79）
+# 有效陸地約 row 25–55, col 25–55（懸停地圖格子可查座標）
+# 用 # 開頭寫注解，程式不會執行該行
+# Tab 鍵 → 自動縮排 4 格
+# ──────────────────────────────────────────────────────
 `;
 
         const LIB_FUNCTIONS = [
@@ -600,7 +607,7 @@
             const wrap = document.getElementById('editorWrap');
             const ta = document.createElement('textarea');
             const savedCode = window.LessonSystem ? window.LessonSystem.loadMapCode() : null;
-            ta.value = savedCode || '';
+            ta.value = savedCode || STARTER_CODE;
             wrap.appendChild(ta);
             editor = CodeMirror.fromTextArea(ta, {
                 mode: 'python',

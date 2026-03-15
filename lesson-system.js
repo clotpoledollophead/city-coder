@@ -951,13 +951,7 @@ window.LessonSystem = (function () {
                                 <span style="margin-left:4px;">city_builder.py — 練習區</span>
                                 <button class="ls-hint-toggle" id="lsHintToggle" style="margin-left:auto;">💡 提示</button>
                             </div>
-                            <textarea id="lessonCodeArea" spellcheck="false" placeholder="# 在這裡撰寫你的 Python 程式碼…
-# 使用規則：
-#   - 座標格式：build_xxx(row, col)，row 是列，col 是欄（皆為 0–79 的整數）
-#   - 有效陸地範圍約 row 25–55, col 25–55（確切邊界依地形而定）
-#   - 用 # 開頭可寫註解，程式不會執行該行
-#   - 縮排請用 4 個空格（Tab 鍵會自動補齊）
-"></textarea>
+                            <textarea id="lessonCodeArea" spellcheck="false" placeholder="# 在這裡撰寫你的 Python 程式碼…"></textarea>
                         </div>
                         <div class="ls-btn-row">
                             <button class="ls-btn ls-btn-run" id="lsRunBtn">▶ 執行並測試</button>
@@ -1147,14 +1141,7 @@ window.LessonSystem = (function () {
             hintToggle.onclick = () => showToast('這題沒有提示，靠你自己！💪');
         }
 
-        const commentHeader = `# ── 使用規則 ──────────────────────────────────────────
-# build_xxx(row, col)  →  row 是列，col 是欄（整數 0–79）
-# 有效陸地約 row 25–55, col 25–55（懸停地圖可查座標）
-# 用 # 開頭寫注解，程式不會執行該行
-# Tab 鍵 → 自動縮排 4 格
-# ──────────────────────────────────────────────────────
-`;
-        document.getElementById('lessonCodeArea').value = commentHeader;
+        document.getElementById('lessonCodeArea').value = '';
         document.getElementById('lsFeedback').className = 'ls-feedback';
     }
 
