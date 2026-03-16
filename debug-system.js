@@ -9,23 +9,21 @@
 window.DebugSystem = (function () {
 
     // ── 觸發門檻（蓋了幾棟建築後才開始出現驚嘆號）──────────────
-    const THRESHOLDS = [3, 6, 10];  // 第一波、第二波、第三波
-    const MAX_PER_WAVE = [1, 2, 2]; // 每波最多幾個驚嘆號同時存在
-    let _waveIndex = 0;             // 目前解鎖到第幾波
-    let _activeMarkers = new Map(); // key→r,c  value→{ sprite, data }
-    let _shownKeys = new Set();     // 已經出現過的建築（避免重複）
-    let _dismissed = new Set();     // 已經完成的 debug 課題
-    let _markerObjs = [];           // THREE.js sprites for cleanup
+    // 改為：所有建築都蓋完後才出現（所有 library 都解鎖後）
+    // 實際上改為：第一棟建築就可以觸發，讓所有題目皆可出現
+    const MAX_ACTIVE = 2;            // 同時最多幾個驚嘆號存在（全域）
+    let _activeMarkers = new Map();  // key→"r,c"  value→{ sprite, challenge, blinkInterval, data }
+    let _shownKeys = new Set();      // 已經出現過驚嘆號的建築（避免同一棟反覆出現）
+    let _dismissed = new Set();      // 已經完成的 debug 題目 id
+    let _activeChallengIds = new Set(); // 目前正在顯示（未完成）的 challenge id，防重複
+    let _markerObjs = [];
 
     // ── Debug 題庫 ──────────────────────────────────────────────
-    // 每題包含：type（選擇/實作）、bugCode（有 bug 的程式碼）、
-    // explanation、hint、check（實作題用）
     const DEBUG_CHALLENGES = [
         // ── 波次 1：基礎語法 bug ──────────────────────────────
         {
             id: 'db_parenthesis',
             wave: 0,
-            requiresLesson: 'build_house',
             buildingTypes: ['house', 'park', 'shop'],
             title: '🔍 Debug：括號不見了！',
             intro: '這棟建築的施工紀錄出了問題！幫我找出程式碼裡的 bug。',
@@ -44,7 +42,6 @@ build_house 40, 40, name="測試屋"`,
         {
             id: 'db_string_quote',
             wave: 0,
-            requiresLesson: 'build_park',
             buildingTypes: ['school', 'library', 'hospital'],
             title: '🔍 Debug：引號不對稱！',
             intro: '工程師寫完程式碼後，建築沒有出現在地圖上。幫他找出原因！',
@@ -65,7 +62,6 @@ build_school(40, 42, name="未來中學')`,
         {
             id: 'db_indent',
             wave: 1,
-            requiresLesson: 'build_shop',
             buildingTypes: ['house', 'shop', 'hospital'],
             title: '🔍 Debug：縮排錯誤！',
             intro: '這個 for 迴圈只蓋了一棟房子，但應該要蓋三棟。問題在哪？',
@@ -85,7 +81,6 @@ build_house(r, 40, name="房子" + str(i))`,
         {
             id: 'db_offbyone',
             wave: 1,
-            requiresLesson: 'build_shop',
             buildingTypes: ['park', 'fountain', 'library'],
             title: '🔍 Debug：差一的錯誤！',
             intro: '工程師想蓋 5 間連排商店，但執行後只出現了 4 間。找出 bug！',
@@ -107,7 +102,6 @@ for i in range(1, 5):
         {
             id: 'db_fix_code_1',
             wave: 2,
-            requiresLesson: 'build_shop',
             buildingTypes: ['school', 'hospital', 'power_tower'],
             title: '🔧 實作 Debug：修正程式碼！',
             intro: '這段程式碼應該蓋 3 棟房子，但有 bug 無法執行。請修正它！',
@@ -130,7 +124,6 @@ for i in range(3)
         {
             id: 'db_fix_code_2',
             wave: 2,
-            requiresLesson: 'build_park',
             buildingTypes: ['library', 'fountain', 'shop'],
             title: '🔧 實作 Debug：變數計算 bug！',
             intro: '工程師想在城市中心蓋公園，但公園出現在錯誤的位置。找出並修正 bug！',
@@ -184,39 +177,63 @@ build_park(center, center + "3", name="中央公園")`,
         return sprite;
     }
 
-    // ── 找一個合適的建築來顯示驚嘆號 ────────────────────────────
-    function pickBuilding(wave) {
-        const maxCount = MAX_PER_WAVE[wave] || 1;
-        if (_activeMarkers.size >= maxCount) return null;
-
-        // ★ 修改：移除課程解鎖限制，讓題目總是可以出現
-        const challenges = DEBUG_CHALLENGES.filter(c => c.wave === wave);
-        if (challenges.length === 0) return null;
+    // ── 找一個合適的建築和題目來顯示驚嘆號 ──────────────────────
+    // 修正：確保不重複題目，並在 _shownKeys 耗盡時重置
+    // 需求：移除課程解鎖限制，所有題目從一開始就可以出現
+    function pickBuildingAndChallenge(_wave) {
+        // 同時存在的驚嘆號上限
+        if (_activeMarkers.size >= MAX_ACTIVE) return null;
 
         const registry = window._cityBuildingRegistry;
         if (!registry || registry.size === 0) return null;
 
-        const eligible = [];
+        // 取得所有尚未 dismissed 且目前未在展示的題目（不限 wave）
+        const availableChallenges = DEBUG_CHALLENGES.filter(c =>
+            !_dismissed.has(c.id) &&
+            !_activeChallengIds.has(c.id)
+        );
+        if (availableChallenges.length === 0) return null;
+
+        // 收集尚未被選中的建築
+        let eligibleBuildings = [];
         registry.forEach((data, key) => {
             if (!_shownKeys.has(key) && !_activeMarkers.has(key)) {
-                const matchingChals = challenges.filter(c => c.buildingTypes.includes(data.type));
-                if (matchingChals.length > 0) eligible.push({ key, data, matchingChals });
+                eligibleBuildings.push({ key, data });
             }
         });
 
-        if (eligible.length === 0) {
-            // 若無類型匹配，隨機選任何未使用建築
-            const allEligible = [];
+        // 若所有建築都用過了，重置 _shownKeys 讓建築可以重複使用
+        if (eligibleBuildings.length === 0) {
+            _shownKeys.clear();
             registry.forEach((data, key) => {
-                if (!_shownKeys.has(key) && !_activeMarkers.has(key)) {
-                    allEligible.push({ key, data, matchingChals: challenges });
+                if (!_activeMarkers.has(key)) {
+                    eligibleBuildings.push({ key, data });
                 }
             });
-            if (allEligible.length === 0) return null;
-            return allEligible[Math.floor(Math.random() * allEligible.length)];
+        }
+        if (eligibleBuildings.length === 0) return null;
+
+        // 優先選擇 buildingTypes 匹配的組合
+        let bestPairs = [];
+        for (const bld of eligibleBuildings) {
+            for (const chal of availableChallenges) {
+                if (chal.buildingTypes.includes(bld.data.type)) {
+                    bestPairs.push({ building: bld, challenge: chal });
+                }
+            }
         }
 
-        return eligible[Math.floor(Math.random() * eligible.length)];
+        // 若無匹配，任意組合
+        if (bestPairs.length === 0) {
+            for (const bld of eligibleBuildings) {
+                for (const chal of availableChallenges) {
+                    bestPairs.push({ building: bld, challenge: chal });
+                }
+            }
+        }
+        if (bestPairs.length === 0) return null;
+
+        return bestPairs[Math.floor(Math.random() * bestPairs.length)];
     }
 
     // ── 顯示驚嘆號 ───────────────────────────────────────────────
@@ -224,14 +241,10 @@ build_park(center, center + "3", name="中央公園")`,
         const scene = window._cityScene;
         if (!scene) return;
 
-        const picked = pickBuilding(wave);
+        const picked = pickBuildingAndChallenge(wave);
         if (!picked) return;
 
-        const { key, data, matchingChals } = picked;
-
-        const available = matchingChals.filter(c => !_dismissed.has(c.id));
-        if (available.length === 0) return;
-        const challenge = available[Math.floor(Math.random() * available.length)];
+        const { building: { key, data }, challenge } = picked;
 
         const sprite = makeExclSprite(scene, data.x, data.topY + 3, data.z);
 
@@ -244,13 +257,11 @@ build_park(center, center + "3", name="中央公園")`,
         }, 50);
 
         _shownKeys.add(key);
+        _activeChallengIds.add(challenge.id);
         _activeMarkers.set(key, { sprite, challenge, blinkInterval, data });
-
-        _pendingClick = { key };
     }
 
     // ── 點擊偵測 ─────────────────────────────────────────────────
-    let _pendingClick = null;
     let _raycaster = null;
     let _mouse = new THREE.Vector2();
 
@@ -299,6 +310,9 @@ build_park(center, center + "3", name="中央公園")`,
         if (challenge.type === 'choice') {
             const optsEl = document.getElementById('dbOptions');
             optsEl.innerHTML = '';
+            // 修正(1)：清除 dataset.answered，確保新題目按鈕可以點擊
+            delete optsEl.dataset.answered;
+
             challenge.options.forEach((opt, i) => {
                 const letters = ['A', 'B', 'C', 'D'];
                 const div = document.createElement('div');
@@ -316,6 +330,11 @@ build_park(center, center + "3", name="中央公園")`,
         }
 
         document.getElementById('dbFeedback').className = 'db-feedback';
+
+        // 清除上次殘留的完成按鈕
+        const oldBtn = document.getElementById('dbCompleteBtn');
+        if (oldBtn) oldBtn.remove();
+
         overlay.classList.add('open');
         document.body.style.overflow = 'hidden';
 
@@ -324,6 +343,7 @@ build_park(center, center + "3", name="中央公園")`,
     }
 
     function handleChoiceAnswer(div, opt, challenge, key, optsEl) {
+        // 修正(1)：用 dataset 防止重複點擊
         if (optsEl.dataset.answered) return;
         optsEl.dataset.answered = '1';
         optsEl.querySelectorAll('.db-opt').forEach(o => { o.style.pointerEvents = 'none'; });
@@ -371,6 +391,8 @@ build_park(center, center + "3", name="中央公園")`,
             _activeMarkers.delete(key);
         }
         _dismissed.add(challengeId);
+        // 修正(2)：dismiss 後從 active set 移除，讓下次可以選不同題
+        _activeChallengIds.delete(challengeId);
     }
 
     function closeDebugModal() {
@@ -383,25 +405,29 @@ build_park(center, center + "3", name="中央公園")`,
 
     // ── 建築增加時的回呼 ─────────────────────────────────────────
     function onBuildingAdded(count) {
-        // ★ 修改：從最高波次往下找，確保 _waveIndex 正確更新
-        for (let w = THRESHOLDS.length - 1; w >= 0; w--) {
-            if (count >= THRESHOLDS[w]) {
-                _waveIndex = w;
-                break;
-            }
-        }
+        // 只有在 build_park 解鎖後才開始出現驚嘆號
+        if (!window.LessonSystem || !window.LessonSystem.isUnlocked('build_park')) return;
         setTimeout(() => {
-            trySpawnForWave(_waveIndex);
+            trySpawnForWave(0);
         }, 800);
     }
 
     function trySpawnForWave(wave) {
-        const maxCount = MAX_PER_WAVE[wave] || 1;
-        if (_activeMarkers.size >= maxCount) return;
+        // 修正(3)：移除隨機拒絕機制，改為只要條件符合就生成
+        // 只有當 activeMarkers 未滿時才嘗試生成
+        if (_activeMarkers.size >= MAX_ACTIVE) return;
 
-        // ★ 修改：第一波 100%，後續波次 80%，大幅提高出現頻率
-        const roll = wave === 0 ? 0 : Math.random();
-        if (roll > 0.80) return;
+        // 檢查是否還有未完成的題目可以出（不限 wave，所有題目皆可）
+        const hasAvailable = DEBUG_CHALLENGES.some(c =>
+            !_dismissed.has(c.id) &&
+            !_activeChallengIds.has(c.id)
+        );
+        if (!hasAvailable) {
+            // 所有題目都做完了，重置 dismissed 讓題目可以再出現
+            // （修正(3)：避免後期完全不出現）
+            _dismissed.clear();
+            _activeChallengIds.clear();
+        }
 
         spawnMarker(wave);
     }
@@ -414,6 +440,7 @@ build_park(center, center + "3", name="中央公園")`,
             if (scene) scene.remove(sprite);
         });
         _activeMarkers.clear();
+        _activeChallengIds.clear();
         _markerObjs = [];
     }
 
@@ -548,7 +575,7 @@ build_park(center, center + "3", name="中央公園")`,
     user-select: none;
     line-height: 1.55;
 }
-.db-opt:hover:not(.answered) { border-color: #ffd700; color: #fff; background: rgba(255,200,0,0.06); }
+.db-opt:hover { border-color: #ffd700; color: #fff; background: rgba(255,200,0,0.06); }
 .db-opt.correct { border-color: #00ff88; background: rgba(0,255,136,0.1); color: #00ff88; }
 .db-opt.wrong   { border-color: #ff6050; background: rgba(255,96,80,0.08); color: #ff8070; }
 .db-opt-letter {
