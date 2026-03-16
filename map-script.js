@@ -30,6 +30,13 @@ const DAY_CYCLE = [
     { t: 1.00, sky: 0x060618, amb: 0x384270, aI: 0.22, sun: 0xff5522, sI: 0.0, elev: 0.0 },
 ];
 
+// Sun elevation threshold below which it is considered "below the horizon".
+// Shadows are disabled at or below this value to prevent ghost shadow artifacts.
+const SUN_SHADOW_ELEV_THRESHOLD = 0.08;
+
+// Streetlight turn-on threshold — lamps come on when sun elevation drops below this.
+const LAMP_ON_ELEV_THRESHOLD = 0.12;
+
 function lerpColor(hexA, hexB, t) {
     const a = new THREE.Color(hexA), b = new THREE.Color(hexB);
     return new THREE.Color(
@@ -378,7 +385,7 @@ function init3DMap() {
     let dayT = 0.22;
 
     function updateDayNight(dt) {
-        // 若 build_streetlight 尚未解鎖，凍結在白天（dayT = 0.50 = 正午）
+        // Freeze at noon until streetlights are unlocked
         const streetlightUnlocked = window.LessonSystem && window.LessonSystem.isUnlocked('build_streetlight');
         if (!streetlightUnlocked) {
             dayT = 0.50;
@@ -414,6 +421,16 @@ function init3DMap() {
         sunMat.color.copy(sun.color);
         sunDisc.visible = elev > 0.01;
 
+        // ── Shadow toggle ─────────────────────────────────────────────────────
+        // Disable sun shadow casting entirely when the sun is near or below the
+        // horizon.  This eliminates the "ghost shadow" artifact where shadow maps
+        // still project at near-zero sun intensity, causing odd dark patches that
+        // linger for a couple of seconds after/before true night.
+        const sunAboveHorizon = elev > SUN_SHADOW_ELEV_THRESHOLD;
+        if (sun.castShadow !== sunAboveHorizon) {
+            sun.castShadow = sunAboveHorizon;
+        }
+
         const moonAngle = sunAngle + Math.PI, moonElev = 1.0 - elev;
         moonLight.position.set(Math.cos(moonAngle) * SUN_R * 0.7, Math.sin(moonElev * Math.PI) * SUN_R, Math.sin(moonAngle) * SUN_R * 0.4);
         moonLight.intensity = Math.max(0, (1 - elev * 2.5)) * 0.55;
@@ -433,13 +450,21 @@ function init3DMap() {
             clockEl.className = elev > 0.05 ? 'day' : 'night';
         }
 
+        // ── Streetlights ──────────────────────────────────────────────────────
+        // Lamps turn on smoothly as the sun drops below LAMP_ON_ELEV_THRESHOLD
+        // and turn off as it rises above it again.  The transition is instant
+        // (no fade) so there's no overlap between sun-shadow rendering and lamp
+        // glow — you either have sun shadows or lamp halos, never both.
         const lights = window._cityStreetLights;
         if (lights && lights.length > 0) {
-            const lampIntensity = Math.max(0, 1 - elev * 18) * 2.5;
-            const isOn = lampIntensity > 0.05;
+            const lampOn = elev < LAMP_ON_ELEV_THRESHOLD;
+            // Smooth fade for the lamp: full brightness well into night,
+            // quick ramp near the threshold so the switch feels natural.
+            const t = Math.max(0, 1 - elev / LAMP_ON_ELEV_THRESHOLD);
+            const lampIntensity = lampOn ? t * t * 2.5 : 0;
             lights.forEach(({ pl, bulbMat }) => {
                 pl.intensity = lampIntensity;
-                bulbMat.color.setHex(isOn ? 0xffee88 : 0x221a00);
+                bulbMat.color.setHex(lampOn ? 0xffee88 : 0x221a00);
             });
         }
     }
