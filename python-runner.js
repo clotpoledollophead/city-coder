@@ -161,9 +161,11 @@ window.PythonRunner = (function () {
                 const fn = window.CityLib[call.fn];
                 if (!fn) throw new Error(`找不到函式 ${call.fn}`);
                 const result = fn(...call.args);
-                results.push({ ok: true, call, result });
+                // ★ 修改：result === null 代表座標已被佔用（跳過），標記 skipped
+                const skipped = (result === null && call.fn !== 'clear_all');
+                results.push({ ok: true, skipped, call, result });
             } catch (e) {
-                results.push({ ok: false, call, error: e.message });
+                results.push({ ok: false, skipped: false, call, error: e.message });
             }
         }
         return results;
@@ -177,7 +179,8 @@ window.PythonRunner = (function () {
             jsCode: jsLines.join('\n'),
             parseErrors,
             execResults,
-            totalBuilt: execResults.filter(r => r.ok).length,
+            // ★ 修改：跳過的（skipped）不算入 totalBuilt
+            totalBuilt: execResults.filter(r => r.ok && !r.skipped).length,
         };
     }
 

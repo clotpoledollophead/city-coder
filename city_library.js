@@ -138,15 +138,6 @@ window.CityLib = (function () {
 
     // ════════════════════════════════════════════════════════════
     //  ROAD SYSTEM — deferred-rebuild + seamless junction rendering
-    //
-    //  連接類型由四向 bitmask 自動判斷：
-    //    N=1, E=2, S=4, W=8
-    //    各種組合 → 十字、T型、L型、直路、端點
-    //
-    //  核心改進：
-    //  1. 路面以一個完整的平面鋪滿連接區域，不再有格縫
-    //  2. 人行道只在「外側邊緣」繪製（沒有道路連接的方向）
-    //  3. 路口角落填滿，消除空洞
     // ════════════════════════════════════════════════════════════
 
     const _roadReg = new Map();
@@ -184,32 +175,22 @@ window.CityLib = (function () {
     }
 
     // ── 道路尺寸常數 ──────────────────────────────────────────────
-    const RW_R = 0.50;   // 路面寬占 tile 比例（剛好半格，方便對齊）
-    const SW_R = 0.12;   // 人行道寬占 tile 比例
-    const RH = 0.18;   // 路面高度（扁平，像瀝青貼地）
-    const SWH = 0.38;   // 人行道高度（明顯高於路面）
-    const CRB = 0.12;   // 路緣石高
+    const RW_R = 0.50;
+    const SW_R = 0.12;
+    const RH = 0.18;
+    const SWH = 0.38;
+    const CRB = 0.12;
 
-    // ── 連接性 bitmask ────────────────────────────────────────────
-    // 判斷此格的道路在四個方向是否有相鄰道路「連接」
-    // 只有方向一致才算連接（H路左右連、V路上下連）
     function getConnectionMask(r, c) {
         const dirs = roadDirs(r, c);
         const isH = dirs.has('h'), isV = dirs.has('v');
-        // 鄰格只要有路（任意方向）就算連接，這樣 H 路也能偵測到上下的 H 鄰居
         const N = hasRoad(r - 1, c) ? 1 : 0;
         const E = hasRoad(r, c + 1) ? 2 : 0;
         const S = hasRoad(r + 1, c) ? 4 : 0;
         const W = hasRoad(r, c - 1) ? 8 : 0;
-        // 只回報與本格道路「方向相關」的連接：
-        // H路關心左右(E/W)和上下是否有路（用於T型融合）
-        // V路關心上下(N/S)和左右是否有路
-        // 如果本格是十字，全部都有意義
         return N | E | S | W;
     }
 
-    // ── 重新繪製單格道路（新版融合算法）────────────────────────────
-    // ── 重新繪製單格道路（Minecraft 風格）───────────────────────────
     function rebuildRoadTile(r, c) {
         const dirs = roadDirs(r, c);
         if (dirs.size === 0) return;
@@ -237,11 +218,9 @@ window.CityLib = (function () {
         const hasH = isH || cE || cW;
         const hasV = isV || cN || cS;
 
-        // ── 人行道：石磚格紋輔助 ─────────────────────────────────
         function swBlock(bx, by, bz, bw, bh, bd) {
             rmesh(key, new THREE.BoxGeometry(bw, bh, bd),
                 COLORS.sidewalk, bx, by, bz);
-            // 表面暗縫（模擬石磚接縫）
             const nSX = Math.max(1, Math.round(bw / (TW * 0.13)));
             for (let i = 1; i < nSX; i++) {
                 const ox = bx - bw / 2 + (bw / nSX) * i;
@@ -265,9 +244,6 @@ window.CityLib = (function () {
                 COLORS.curb, cx, CRBY, cz);
         }
 
-        // ════════════════════════════════════════════════════════
-        //  1. 路面主體
-        // ════════════════════════════════════════════════════════
         if (hasH && hasV) {
             rmesh(key, new THREE.BoxGeometry(TW, RH, TW),
                 COLORS.road_dark, x, RY, z);
@@ -283,11 +259,7 @@ window.CityLib = (function () {
                 COLORS.road_mid, x, RY, z);
         }
 
-        // ════════════════════════════════════════════════════════
-        //  2. 道路標線
-        // ════════════════════════════════════════════════════════
         if (hasH && !hasV) {
-            // 白色虛線中心線
             [-0.32, 0, 0.32].forEach(t =>
                 rmesh(key, new THREE.BoxGeometry(TW * 0.16, 0.05, 0.20),
                     COLORS.road_line, x + t * TW, LINEY, z));
@@ -296,7 +268,6 @@ window.CityLib = (function () {
                 rmesh(key, new THREE.BoxGeometry(0.20, 0.05, TW * 0.16),
                     COLORS.road_line, x, LINEY, z + t * TW));
         } else {
-            // 路口斑馬線（在有連接的邊畫）
             const stripeW = RW * 0.13;
             const stripeGap = RW * 0.17;
             const stripeCount = 4;
@@ -325,9 +296,6 @@ window.CityLib = (function () {
             if (cW) zebra('W');
         }
 
-        // ════════════════════════════════════════════════════════
-        //  3. 人行道 + 路緣石（石磚格紋）
-        // ════════════════════════════════════════════════════════
         if (hasH && hasV) {
             const sqHalf = RW / 2 + SW / 2;
             [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
@@ -431,7 +399,6 @@ window.CityLib = (function () {
         }
         dirsToAdd.forEach(d => _roadReg.get(key).add(d));
 
-        // 重建本格及四鄰（鄰格可能因連接狀態改變而需要更新人行道）
         [[row, col], [row - 1, col], [row + 1, col], [row, col - 1], [row, col + 1]]
             .forEach(([r, c]) => rebuildRoadTile(r, c));
 
@@ -440,13 +407,17 @@ window.CityLib = (function () {
 
     // ════════════════════════════════════════════════════════════
     //  非道路建築函式
+    //  ★ 修改：座標已被佔用時直接回傳 null（跳過），不再找附近空位
     // ════════════════════════════════════════════════════════════
 
     function build_house(row = null, col = null, floors = 1, name = "") {
         if (row !== null && col !== null && !isLand(row, col))
             return warnOffland('build_house', row, col);
-        const tile = (row !== null && col !== null && isFree(row, col))
-            ? { r: row, c: col } : findFreeTile(row || 40, col || 40);
+        if (row !== null && col !== null && !isFree(row, col)) {
+            console.info(`[CityLib] build_house(${row},${col}) — 座標已被佔用，跳過`);
+            return null;
+        }
+        const tile = (row !== null && col !== null) ? { r: row, c: col } : findFreeTile(row || 40, col || 40);
         if (!tile) return console.warn('[CityLib] No free tile for house');
         occupy(tile.r, tile.c);
         const { x, z } = tilePos(tile.r, tile.c);
@@ -468,8 +439,11 @@ window.CityLib = (function () {
     function build_park(row = null, col = null, name = "") {
         if (row !== null && col !== null && !isLand(row, col))
             return warnOffland('build_park', row, col);
-        const tile = (row !== null && col !== null && isFree(row, col))
-            ? { r: row, c: col } : findFreeTile(row || 40, col || 40);
+        if (row !== null && col !== null && !isFree(row, col)) {
+            console.info(`[CityLib] build_park(${row},${col}) — 座標已被佔用，跳過`);
+            return null;
+        }
+        const tile = (row !== null && col !== null) ? { r: row, c: col } : findFreeTile(row || 40, col || 40);
         if (!tile) return console.warn('[CityLib] No free tile for park');
         occupy(tile.r, tile.c);
         const { x, z } = tilePos(tile.r, tile.c);
@@ -489,8 +463,11 @@ window.CityLib = (function () {
     function build_library(row = null, col = null, name = "") {
         if (row !== null && col !== null && !isLand(row, col))
             return warnOffland('build_library', row, col);
-        const tile = (row !== null && col !== null && isFree(row, col))
-            ? { r: row, c: col } : findFreeTile(row || 40, col || 40);
+        if (row !== null && col !== null && !isFree(row, col)) {
+            console.info(`[CityLib] build_library(${row},${col}) — 座標已被佔用，跳過`);
+            return null;
+        }
+        const tile = (row !== null && col !== null) ? { r: row, c: col } : findFreeTile(row || 40, col || 40);
         if (!tile) return console.warn('[CityLib] No free tile for library');
         occupy(tile.r, tile.c);
         const { x, z } = tilePos(tile.r, tile.c);
@@ -511,8 +488,11 @@ window.CityLib = (function () {
     function build_school(row = null, col = null, name = "") {
         if (row !== null && col !== null && !isLand(row, col))
             return warnOffland('build_school', row, col);
-        const tile = (row !== null && col !== null && isFree(row, col))
-            ? { r: row, c: col } : findFreeTile(row || 40, col || 40);
+        if (row !== null && col !== null && !isFree(row, col)) {
+            console.info(`[CityLib] build_school(${row},${col}) — 座標已被佔用，跳過`);
+            return null;
+        }
+        const tile = (row !== null && col !== null) ? { r: row, c: col } : findFreeTile(row || 40, col || 40);
         if (!tile) return console.warn('[CityLib] No free tile for school');
         occupy(tile.r, tile.c);
         const { x, z } = tilePos(tile.r, tile.c);
@@ -532,8 +512,11 @@ window.CityLib = (function () {
     function build_hospital(row = null, col = null, name = "") {
         if (row !== null && col !== null && !isLand(row, col))
             return warnOffland('build_hospital', row, col);
-        const tile = (row !== null && col !== null && isFree(row, col))
-            ? { r: row, c: col } : findFreeTile(row || 40, col || 40);
+        if (row !== null && col !== null && !isFree(row, col)) {
+            console.info(`[CityLib] build_hospital(${row},${col}) — 座標已被佔用，跳過`);
+            return null;
+        }
+        const tile = (row !== null && col !== null) ? { r: row, c: col } : findFreeTile(row || 40, col || 40);
         if (!tile) return console.warn('[CityLib] No free tile for hospital');
         occupy(tile.r, tile.c);
         const { x, z } = tilePos(tile.r, tile.c);
@@ -553,8 +536,11 @@ window.CityLib = (function () {
     function build_shop(row = null, col = null, name = "") {
         if (row !== null && col !== null && !isLand(row, col))
             return warnOffland('build_shop', row, col);
-        const tile = (row !== null && col !== null && isFree(row, col))
-            ? { r: row, c: col } : findFreeTile(row || 40, col || 40);
+        if (row !== null && col !== null && !isFree(row, col)) {
+            console.info(`[CityLib] build_shop(${row},${col}) — 座標已被佔用，跳過`);
+            return null;
+        }
+        const tile = (row !== null && col !== null) ? { r: row, c: col } : findFreeTile(row || 40, col || 40);
         if (!tile) return console.warn('[CityLib] No free tile for shop');
         occupy(tile.r, tile.c);
         const { x, z } = tilePos(tile.r, tile.c);
@@ -572,8 +558,11 @@ window.CityLib = (function () {
     function build_power_tower(row = null, col = null) {
         if (row !== null && col !== null && !isLand(row, col))
             return warnOffland('build_power_tower', row, col);
-        const tile = (row !== null && col !== null && isFree(row, col))
-            ? { r: row, c: col } : findFreeTile(row || 40, col || 40);
+        if (row !== null && col !== null && !isFree(row, col)) {
+            console.info(`[CityLib] build_power_tower(${row},${col}) — 座標已被佔用，跳過`);
+            return null;
+        }
+        const tile = (row !== null && col !== null) ? { r: row, c: col } : findFreeTile(row || 40, col || 40);
         if (!tile) return console.warn('[CityLib] No free tile for power tower');
         occupy(tile.r, tile.c);
         const { x, z } = tilePos(tile.r, tile.c);
@@ -589,8 +578,11 @@ window.CityLib = (function () {
     function build_fountain(row = null, col = null, name = "") {
         if (row !== null && col !== null && !isLand(row, col))
             return warnOffland('build_fountain', row, col);
-        const tile = (row !== null && col !== null && isFree(row, col))
-            ? { r: row, c: col } : findFreeTile(row || 40, col || 40);
+        if (row !== null && col !== null && !isFree(row, col)) {
+            console.info(`[CityLib] build_fountain(${row},${col}) — 座標已被佔用，跳過`);
+            return null;
+        }
+        const tile = (row !== null && col !== null) ? { r: row, c: col } : findFreeTile(row || 40, col || 40);
         if (!tile) return console.warn('[CityLib] No free tile for fountain');
         occupy(tile.r, tile.c);
         const { x, z } = tilePos(tile.r, tile.c);
@@ -607,8 +599,11 @@ window.CityLib = (function () {
     function build_streetlight(row = null, col = null) {
         if (row !== null && col !== null && !isLand(row, col))
             return warnOffland('build_streetlight', row, col);
-        const tile = (row !== null && col !== null && isFree(row, col))
-            ? { r: row, c: col } : findFreeTile(row || 40, col || 40);
+        if (row !== null && col !== null && !isFree(row, col)) {
+            console.info(`[CityLib] build_streetlight(${row},${col}) — 座標已被佔用，跳過`);
+            return null;
+        }
+        const tile = (row !== null && col !== null) ? { r: row, c: col } : findFreeTile(row || 40, col || 40);
         if (!tile) return console.warn('[CityLib] No free tile for streetlight');
         occupy(tile.r, tile.c);
         const { x, z } = tilePos(tile.r, tile.c);

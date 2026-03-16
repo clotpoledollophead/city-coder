@@ -716,7 +716,8 @@
                     const { jsCode, parseErrors, execResults, totalBuilt } = window.PythonRunner.run(code);
                     parseErrors.forEach(e => log(`⚠ 第 ${e.line} 行：${e.msg}`, 'log-warn'));
                     execResults.forEach(r => {
-                        if (r.ok) log(`✓ 第 ${r.call.lineNum} 行：${r.call.fn}() → ${r.result ? r.result.type : '完成'}`, 'log-ok');
+                        if (r.skipped) log(`↷ 第 ${r.call.lineNum} 行：${r.call.fn}() — 座標已有建築，跳過`, 'log-warn');
+                        else if (r.ok) log(`✓ 第 ${r.call.lineNum} 行：${r.call.fn}() → ${r.result ? r.result.type : '完成'}`, 'log-ok');
                         else log(`✗ 第 ${r.call.lineNum} 行：${r.call.fn}() — ${r.error}`, 'log-err');
                     });
                     const errCount = execResults.filter(r => !r.ok).length;
