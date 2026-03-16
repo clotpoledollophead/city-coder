@@ -1,0 +1,10 @@
+.skip-link {
+    margin-top: 1.2rem;
+    font-family: 'Oxanium', sans-serif;
+    font-size: 0.82rem;
+    color: rgba(0, 255, 136, 0.4);
+    text-decoration: none;
+    letter-spacing: 0.5px;
+    transition: color 0.2s;
+}
+.skip-link:hover { color: rgba(0, 255, 136, 0.8); }

@@ -5,17 +5,6 @@ window.LessonSystem = (function () {
 
     // ══════════════════════════════════════════════════════════════════════
     //  課程定義（從基礎到進階）
-    //  解鎖順序：
-    //    第 1 課：build_house
-    //    第 2 課：build_streetlight
-    //    第 3 課：build_road
-    //    第 4 課：build_school
-    //    第 5 課：build_shop
-    //    第 6 課：build_library
-    //    第 7 課：build_hospital
-    //    第 8 課：build_fountain
-    //    第 9 課：build_power_tower
-    //    第 10 課：build_park
     // ══════════════════════════════════════════════════════════════════════
     const LESSONS = [
         // ── 第 1 課：build_house ──────────────────────────────────────────
@@ -244,7 +233,7 @@ window.LessonSystem = (function () {
                     errMsg: '需要 if、elif、else 三個分支！',
                 },
                 {
-                    q: '【挑戰】在地圖上呼叫 build_school，並在程式中用 if/else 根據某個條件決定學校名稱（例如：人數多就叫大學校，少就叫小學校）',
+                    q: '【挑戰】在地圖上呼叫 build_school，並在程式中用 if/else 根據某個條件決定學校名稱',
                     hint: null,
                     check: (code) => /\bif\b/.test(code) && /build_school\s*\(/.test(code),
                     errMsg: '程式要有 if 判斷，且要呼叫 build_school！',
@@ -476,7 +465,7 @@ window.LessonSystem = (function () {
                     errMsg: '函式需要用 return 回傳結果！',
                 },
                 {
-                    q: '【挑戰】定義函式 build_community(r, c)，在函式裡呼叫 build_fountain，然後呼叫這個函式至少兩次（蓋兩個不同位置的社區）',
+                    q: '【挑戰】定義函式 build_community(r, c)，在函式裡呼叫 build_fountain，然後呼叫這個函式至少兩次',
                     hint: null,
                     check: (code) => {
                         if (!/def\s+\w+\s*\(/.test(code)) return false;
@@ -485,7 +474,7 @@ window.LessonSystem = (function () {
                         if (!userFnMatch) return false;
                         const fnName = userFnMatch[1];
                         const callCount = (code.match(new RegExp(fnName + '\\s*\\(', 'g')) || []).length;
-                        return callCount >= 3; // 1 def + 2 calls
+                        return callCount >= 3;
                     },
                     errMsg: '定義函式，在函式裡呼叫 build_fountain，再呼叫你的函式兩次以上！',
                 },
@@ -614,7 +603,7 @@ window.LessonSystem = (function () {
         },
     ];
 
-    // ── 卡片順序：與 LESSONS 一致，clear_all 排最後 ──────────────────
+    // ── 卡片順序 ──────────────────────────────────────────────────
     const LESSON_ORDER = [...LESSONS.map(l => l.fnName), 'clear_all'];
 
     // ══════════════════════════════════════════════════════════════════════
@@ -624,7 +613,6 @@ window.LessonSystem = (function () {
     const MAP_KEY = 'codescape_map';
     let unlockedSet = new Set();
 
-    // ── Cookie helpers ────────────────────────────────────────────────────
     function setCookie(name, value, days = 365) {
         const exp = new Date(Date.now() + days * 864e5).toUTCString();
         document.cookie = `${name}=${encodeURIComponent(value)};expires=${exp};path=/;SameSite=Lax`;
@@ -647,7 +635,6 @@ window.LessonSystem = (function () {
         try { setCookie(STORAGE_KEY, JSON.stringify([...unlockedSet])); } catch (e) { /* ignore */ }
     }
 
-    // ── Map code persistence ──────────────────────────────────────────────
     function saveMapCode(code) {
         try { setCookie(MAP_KEY, code); } catch (e) { /* ignore */ }
     }
@@ -655,7 +642,6 @@ window.LessonSystem = (function () {
         try { return getCookie(MAP_KEY) || null; } catch (e) { return null; }
     }
 
-    // ── Reset all progress ────────────────────────────────────────────────
     function resetAll() {
         deleteCookie(STORAGE_KEY);
         deleteCookie(MAP_KEY);
@@ -675,230 +661,6 @@ window.LessonSystem = (function () {
             const card = body.querySelector(`.lib-fn-card[data-fn="${fn}"]`);
             if (card) body.appendChild(card);
         });
-    }
-
-    // ══════════════════════════════════════════════════════════════════════
-    //  Inject styles
-    // ══════════════════════════════════════════════════════════════════════
-    function injectStyles() {
-        if (document.getElementById('lesson-styles')) return;
-        const s = document.createElement('style');
-        s.id = 'lesson-styles';
-        s.textContent = `
-#lessonOverlay {
-    display:none; position:fixed; inset:0; z-index:1000;
-    background:rgba(4,8,28,0.88); backdrop-filter:blur(6px);
-    justify-content:center; align-items:center;
-}
-#lessonOverlay.open { display:flex; }
-#lessonModal {
-    background:linear-gradient(145deg,#0a0e27 0%,#111430 100%);
-    border:1.5px solid rgba(0,255,136,0.35); border-radius:16px;
-    width:min(790px,96vw); max-height:90vh; overflow-y:auto;
-    box-shadow:0 0 60px rgba(0,255,136,0.15),0 20px 60px rgba(0,0,0,0.7);
-    animation:lsIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
-    scrollbar-width:thin; scrollbar-color:rgba(0,255,136,0.3) transparent;
-}
-@keyframes lsIn{from{opacity:0;transform:scale(0.9) translateY(20px);}to{opacity:1;transform:scale(1) translateY(0);}}
-#lessonModal::-webkit-scrollbar{width:4px;}
-#lessonModal::-webkit-scrollbar-thumb{background:rgba(0,255,136,0.3);border-radius:2px;}
-
-.ls-header{
-    display:flex; align-items:center; gap:14px; padding:20px 26px 14px;
-    border-bottom:1px solid rgba(0,255,136,0.15);
-    position:sticky; top:0; z-index:2;
-    background:linear-gradient(145deg,#0a0e27,#111430);
-}
-.ls-header-emoji{font-size:2.4rem;line-height:1;}
-.ls-header-text h2{
-    font-family:'Jersey 15',sans-serif; font-size:1.5rem; color:#00ffff;
-    letter-spacing:1px; text-shadow:0 0 10px rgba(0,255,255,0.4); line-height:1.2;
-}
-.ls-concept-tag{
-    display:inline-block; margin-top:4px;
-    font-family:'Oxanium',monospace; font-size:0.7rem; font-weight:700;
-    letter-spacing:1.5px; text-transform:uppercase; padding:3px 10px;
-    border-radius:4px; background:rgba(245,166,35,0.12);
-    border:1px solid rgba(245,166,35,0.35); color:#f5a623;
-}
-.ls-close{
-    margin-left:auto; background:none; border:1px solid rgba(0,255,136,0.25);
-    color:rgba(0,255,136,0.5); font-size:1.1rem;
-    width:32px; height:32px; border-radius:7px; cursor:pointer;
-    transition:all 0.15s; display:flex; align-items:center; justify-content:center; flex-shrink:0;
-}
-.ls-close:hover{color:#00ff88;border-color:#00ff88;background:rgba(0,255,136,0.08);}
-
-/* Tabs */
-.ls-tabs{display:flex;border-bottom:1px solid rgba(0,255,136,0.12);background:rgba(0,0,0,0.2);}
-.ls-tab{
-    flex:1; padding:9px 6px;
-    font-family:'Oxanium',monospace; font-size:0.72rem; font-weight:700;
-    letter-spacing:0.5px; text-align:center; cursor:pointer;
-    color:rgba(0,255,136,0.35); border-bottom:2px solid transparent;
-    transition:all 0.15s; user-select:none;
-}
-.ls-tab:hover{color:rgba(0,255,136,0.7);}
-.ls-tab.active{color:#00ff88;border-bottom-color:#00ff88;background:rgba(0,255,136,0.04);}
-.ls-tab.done{color:rgba(0,255,136,0.55);}
-.ls-tab.done::after{content:' ✓';}
-.ls-tab.locked-tab{color:rgba(100,100,100,0.4);cursor:not-allowed;}
-
-.ls-body{padding:20px 26px 80px;}
-.ls-phase{display:none;}
-.ls-phase.active{display:block;}
-
-/* Concept box */
-.ls-concept-box{
-    background:rgba(0,255,136,0.04); border:1px solid rgba(0,255,136,0.2);
-    border-left:3px solid #00ff88; border-radius:8px;
-    padding:14px 18px; margin-bottom:16px;
-    font-family:'Oxanium',sans-serif; font-size:0.88rem;
-    color:rgba(200,240,255,0.85); line-height:1.9;
-}
-.ls-concept-box code,.ls-step-content code,.ls-quiz-explain code{
-    font-family:'Oxanium',monospace; font-size:0.82rem;
-    background:rgba(0,255,136,0.1); color:#00ff88; padding:1px 5px; border-radius:3px;
-}
-
-/* Steps */
-.ls-steps{margin-bottom:14px;}
-.ls-step{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid rgba(0,255,136,0.07);}
-.ls-step:last-child{border-bottom:none;}
-.ls-step-num{
-    font-family:'Jersey 15',monospace; font-size:1.2rem; color:#00ff88;
-    min-width:24px; text-align:center; text-shadow:0 0 8px rgba(0,255,136,0.5); flex-shrink:0;
-}
-.ls-step-content{font-family:'Oxanium',sans-serif;font-size:0.85rem;color:rgba(200,240,255,0.8);line-height:1.85;}
-.ls-step-label{font-weight:700;color:#f5a623;margin-right:5px;}
-
-/* Quiz */
-.ls-quiz-progress{
-    font-family:'Oxanium',monospace; font-size:0.75rem;
-    color:rgba(245,166,35,0.6); margin-bottom:14px; letter-spacing:0.5px;
-}
-.ls-quiz-block{margin-bottom:20px;}
-.ls-quiz-q{
-    font-family:'Oxanium',sans-serif; font-size:0.9rem; font-weight:700;
-    color:#fff; margin-bottom:10px; line-height:1.5;
-}
-.ls-q-num{font-family:'Jersey 15',monospace;font-size:1.1rem;color:#f5a623;margin-right:8px;}
-.ls-quiz-opts{display:flex;flex-direction:column;gap:7px;}
-.ls-quiz-opt{
-    display:flex; align-items:center; gap:10px; padding:9px 14px;
-    border-radius:7px; border:1px solid rgba(0,255,136,0.18);
-    background:rgba(0,0,0,0.25); color:rgba(200,240,255,0.7);
-    font-family:'Oxanium',sans-serif; font-size:0.83rem;
-    cursor:pointer; transition:all 0.15s; user-select:none;
-}
-.ls-quiz-opt:hover:not(.answered){border-color:#00ff88;color:#fff;background:rgba(0,255,136,0.07);}
-.ls-quiz-opt.correct{border-color:#00ff88;background:rgba(0,255,136,0.12);color:#00ff88;}
-.ls-quiz-opt.wrong{border-color:#ff6050;background:rgba(255,96,80,0.08);color:#ff8070;}
-.ls-quiz-opt-letter{font-family:'Jersey 15',monospace;font-size:1rem;min-width:20px;text-align:center;color:#4ea8d4;}
-.ls-quiz-explain{
-    margin-top:8px; padding:9px 14px; border-radius:7px;
-    font-family:'Oxanium',sans-serif; font-size:0.82rem; line-height:1.7; display:none;
-}
-@keyframes lsFbIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
-.ls-quiz-explain.ok{display:block;background:rgba(0,255,136,0.07);border:1px solid rgba(0,255,136,0.25);color:#00ff88;animation:lsFbIn 0.25s ease;}
-.ls-quiz-explain.bad{display:block;background:rgba(255,96,80,0.07);border:1px solid rgba(255,96,80,0.25);color:#ff8070;animation:lsFbIn 0.25s ease;}
-
-/* Task & editor */
-.ls-task-box{
-    background:rgba(245,166,35,0.06); border:1px solid rgba(245,166,35,0.3);
-    border-radius:8px; padding:11px 16px; margin-bottom:14px;
-    font-family:'Oxanium',sans-serif; font-size:0.87rem; color:#f5a623; line-height:1.7;
-}
-.ls-task-box strong{font-size:0.72rem;letter-spacing:1px;text-transform:uppercase;opacity:0.65;display:block;margin-bottom:3px;}
-.ls-editor-wrap{border:1px solid rgba(0,255,136,0.22);border-radius:8px;overflow:hidden;margin-bottom:12px;}
-.ls-editor-bar{
-    display:flex;align-items:center;gap:7px;padding:5px 12px;
-    background:rgba(0,255,136,0.07);border-bottom:1px solid rgba(0,255,136,0.12);
-    font-family:'Oxanium',monospace;font-size:10px;letter-spacing:1px;color:rgba(0,255,136,0.4);
-}
-.ls-editor-bar .dot-r{width:7px;height:7px;border-radius:50%;background:#ff5f57;}
-.ls-editor-bar .dot-y{width:7px;height:7px;border-radius:50%;background:#ffbd2e;}
-.ls-editor-bar .dot-g{width:7px;height:7px;border-radius:50%;background:#28ca41;}
-#lessonCodeArea{
-    width:100%; min-height:120px; background:#08080f; color:#00ff88;
-    font-family:'Oxanium',monospace; font-size:13px; line-height:1.85;
-    padding:12px 16px; border:none; outline:none; resize:vertical; tab-size:4;
-}
-#lessonCodeArea::placeholder{color:rgba(0,255,136,0.18);}
-
-/* Buttons */
-.ls-btn-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-.ls-btn{
-    font-family:'Oxanium',monospace; font-size:0.8rem; font-weight:700;
-    letter-spacing:0.5px; padding:8px 18px; border-radius:7px; border:none; cursor:pointer; transition:all 0.15s;
-}
-.ls-btn-run{background:#00ff88;color:#040e12;box-shadow:0 0 12px rgba(0,255,136,0.35);}
-.ls-btn-run:hover{background:#33ffaa;box-shadow:0 0 22px rgba(0,255,136,0.6);transform:translateY(-1px);}
-.ls-btn-secondary{background:transparent;color:rgba(0,255,136,0.4);border:1px solid rgba(0,255,136,0.2);}
-.ls-btn-secondary:hover{color:rgba(0,255,136,0.7);border-color:rgba(0,255,136,0.4);}
-
-.ls-feedback{
-    margin-top:10px;padding:11px 15px;border-radius:8px;
-    font-family:'Oxanium',monospace;font-size:0.83rem;line-height:1.7;display:none;
-}
-.ls-feedback.ok{display:block;background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.3);color:#00ff88;animation:lsFbIn 0.25s ease;}
-.ls-feedback.err{display:block;background:rgba(255,96,80,0.08);border:1px solid rgba(255,96,80,0.3);color:#ff8070;animation:lsFbIn 0.25s ease;}
-
-/* Lock styles */
-.lib-fn-card.locked{opacity:0.42;cursor:not-allowed;filter:grayscale(0.65);position:relative;}
-.lib-fn-card.locked::after{content:'🔒';position:absolute;top:1px;right:3px;font-size:9px;pointer-events:none;}
-.lib-fn-card.unlocking{animation:lsUnlock 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards;}
-@keyframes lsUnlock{
-    0%{transform:scale(1);filter:grayscale(0.65) brightness(1);}
-    40%{transform:scale(1.18);filter:grayscale(0) brightness(1.8);box-shadow:0 0 20px #00ff88;}
-    70%{transform:scale(0.96);}
-    100%{transform:scale(1);filter:none;}
-}
-.ls-btn-retry{background:transparent;color:#f5a623;border:1px solid rgba(245,166,35,0.45);}
-.ls-btn-retry:hover{background:rgba(245,166,35,0.1);border-color:#f5a623;}
-
-/* Challenge progress dots */
-.ls-chal-progress{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
-.ls-chal-dot{
-    width:28px;height:28px;border-radius:50%;border:2px solid rgba(0,255,136,0.25);
-    background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;
-    font-family:'Jersey 15',monospace;font-size:0.85rem;color:rgba(0,255,136,0.35);
-    cursor:pointer;transition:all 0.2s;
-}
-.ls-chal-dot.active{border-color:#00ff88;color:#00ff88;box-shadow:0 0 8px rgba(0,255,136,0.4);}
-.ls-chal-dot.done{background:rgba(0,255,136,0.15);border-color:#00ff88;color:#00ff88;}
-.ls-chal-dot.locked-dot{cursor:not-allowed;}
-.ls-chal-connector{width:20px;height:2px;background:rgba(0,255,136,0.15);}
-.ls-chal-connector.done{background:rgba(0,255,136,0.45);}
-
-/* Challenge question header */
-.ls-chal-header{
-    background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.28);
-    border-left:3px solid #f5a623;border-radius:8px;
-    padding:12px 16px;margin-bottom:12px;
-    font-family:'Oxanium',sans-serif;font-size:0.9rem;
-    color:rgba(255,240,200,0.9);line-height:1.7;
-}
-
-/* Hint box */
-.ls-hint-box{
-    background:rgba(78,168,212,0.07);border:1px solid rgba(78,168,212,0.28);
-    border-radius:8px;padding:10px 16px;margin-bottom:10px;
-    font-family:'Oxanium',monospace;font-size:0.83rem;
-    color:#4ea8d4;line-height:1.75;white-space:pre-wrap;
-}
-.ls-hint-toggle{
-    font-family:'Oxanium',monospace;font-size:0.72rem;font-weight:700;
-    background:transparent;border:1px solid rgba(78,168,212,0.35);
-    color:rgba(78,168,212,0.6);padding:2px 9px;border-radius:5px;cursor:pointer;
-    transition:all 0.15s;flex-shrink:0;
-}
-.ls-hint-toggle:hover{color:#4ea8d4;border-color:#4ea8d4;}
-.ls-hint-toggle.no-hint{opacity:0.3;cursor:not-allowed;}
-
-#libProgressText{font-family:'Oxanium',monospace;font-size:9px;color:rgba(245,166,35,0.6);margin-left:4px;letter-spacing:0.5px;}
-        `;
-        document.head.appendChild(s);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -963,11 +725,9 @@ window.LessonSystem = (function () {
             </div>`;
         document.body.appendChild(overlay);
 
-        // Close
         document.getElementById('lsClose').addEventListener('click', closeModal);
         overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
 
-        // Tab clicks
         overlay.querySelectorAll('.ls-tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 const phase = parseInt(tab.dataset.phase);
@@ -975,7 +735,6 @@ window.LessonSystem = (function () {
             });
         });
 
-        // Phase navigation buttons
         document.getElementById('lsToQuizBtn').addEventListener('click', () => gotoPhase(1));
         document.getElementById('lsBackLearnBtn').addEventListener('click', () => gotoPhase(0));
         document.getElementById('lsQuizNextBtn').addEventListener('click', advanceQuiz);
@@ -987,7 +746,6 @@ window.LessonSystem = (function () {
             renderQuiz();
         });
 
-        // Code area: Tab key
         document.getElementById('lessonCodeArea').addEventListener('keydown', e => {
             if (e.key === 'Tab') {
                 e.preventDefault();
@@ -997,7 +755,6 @@ window.LessonSystem = (function () {
             }
         });
 
-        // Practice buttons
         document.getElementById('lsRunBtn').addEventListener('click', runLessonCode);
         document.getElementById('lsSkipBtn').addEventListener('click', () => {
             if (confirm('確定要略過此課程並直接解鎖？（建議完成課程，學習效果更好）')) {
@@ -1190,7 +947,7 @@ window.LessonSystem = (function () {
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    //  Run practice code — per-challenge check
+    //  Run practice code
     // ══════════════════════════════════════════════════════════════════════
     function runLessonCode() {
         const lesson = LESSONS[_state.lessonIdx];
@@ -1378,7 +1135,6 @@ window.LessonSystem = (function () {
     // ══════════════════════════════════════════════════════════════════════
     function init(opts = {}) {
         loadUnlocked();
-        injectStyles();
         injectModal();
 
         const libLabel = document.querySelector('#libHeader .label');

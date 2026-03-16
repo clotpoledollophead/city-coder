@@ -8,14 +8,11 @@
 
 window.DebugSystem = (function () {
 
-    // ── 觸發門檻（蓋了幾棟建築後才開始出現驚嘆號）──────────────
-    // 改為：所有建築都蓋完後才出現（所有 library 都解鎖後）
-    // 實際上改為：第一棟建築就可以觸發，讓所有題目皆可出現
-    const MAX_ACTIVE = 2;            // 同時最多幾個驚嘆號存在（全域）
-    let _activeMarkers = new Map();  // key→"r,c"  value→{ sprite, challenge, blinkInterval, data }
-    let _shownKeys = new Set();      // 已經出現過驚嘆號的建築（避免同一棟反覆出現）
-    let _dismissed = new Set();      // 已經完成的 debug 題目 id
-    let _activeChallengIds = new Set(); // 目前正在顯示（未完成）的 challenge id，防重複
+    const MAX_ACTIVE = 2;
+    let _activeMarkers = new Map();
+    let _shownKeys = new Set();
+    let _dismissed = new Set();
+    let _activeChallengIds = new Set();
     let _markerObjs = [];
 
     // ── Debug 題庫 ──────────────────────────────────────────────
@@ -178,23 +175,18 @@ build_park(center, center + "3", name="中央公園")`,
     }
 
     // ── 找一個合適的建築和題目來顯示驚嘆號 ──────────────────────
-    // 修正：確保不重複題目，並在 _shownKeys 耗盡時重置
-    // 需求：移除課程解鎖限制，所有題目從一開始就可以出現
     function pickBuildingAndChallenge(_wave) {
-        // 同時存在的驚嘆號上限
         if (_activeMarkers.size >= MAX_ACTIVE) return null;
 
         const registry = window._cityBuildingRegistry;
         if (!registry || registry.size === 0) return null;
 
-        // 取得所有尚未 dismissed 且目前未在展示的題目（不限 wave）
         const availableChallenges = DEBUG_CHALLENGES.filter(c =>
             !_dismissed.has(c.id) &&
             !_activeChallengIds.has(c.id)
         );
         if (availableChallenges.length === 0) return null;
 
-        // 收集尚未被選中的建築
         let eligibleBuildings = [];
         registry.forEach((data, key) => {
             if (!_shownKeys.has(key) && !_activeMarkers.has(key)) {
@@ -202,7 +194,6 @@ build_park(center, center + "3", name="中央公園")`,
             }
         });
 
-        // 若所有建築都用過了，重置 _shownKeys 讓建築可以重複使用
         if (eligibleBuildings.length === 0) {
             _shownKeys.clear();
             registry.forEach((data, key) => {
@@ -213,7 +204,6 @@ build_park(center, center + "3", name="中央公園")`,
         }
         if (eligibleBuildings.length === 0) return null;
 
-        // 優先選擇 buildingTypes 匹配的組合
         let bestPairs = [];
         for (const bld of eligibleBuildings) {
             for (const chal of availableChallenges) {
@@ -223,7 +213,6 @@ build_park(center, center + "3", name="中央公園")`,
             }
         }
 
-        // 若無匹配，任意組合
         if (bestPairs.length === 0) {
             for (const bld of eligibleBuildings) {
                 for (const chal of availableChallenges) {
@@ -310,7 +299,6 @@ build_park(center, center + "3", name="中央公園")`,
         if (challenge.type === 'choice') {
             const optsEl = document.getElementById('dbOptions');
             optsEl.innerHTML = '';
-            // 修正(1)：清除 dataset.answered，確保新題目按鈕可以點擊
             delete optsEl.dataset.answered;
 
             challenge.options.forEach((opt, i) => {
@@ -331,7 +319,6 @@ build_park(center, center + "3", name="中央公園")`,
 
         document.getElementById('dbFeedback').className = 'db-feedback';
 
-        // 清除上次殘留的完成按鈕
         const oldBtn = document.getElementById('dbCompleteBtn');
         if (oldBtn) oldBtn.remove();
 
@@ -343,7 +330,6 @@ build_park(center, center + "3", name="中央公園")`,
     }
 
     function handleChoiceAnswer(div, opt, challenge, key, optsEl) {
-        // 修正(1)：用 dataset 防止重複點擊
         if (optsEl.dataset.answered) return;
         optsEl.dataset.answered = '1';
         optsEl.querySelectorAll('.db-opt').forEach(o => { o.style.pointerEvents = 'none'; });
@@ -391,7 +377,6 @@ build_park(center, center + "3", name="中央公園")`,
             _activeMarkers.delete(key);
         }
         _dismissed.add(challengeId);
-        // 修正(2)：dismiss 後從 active set 移除，讓下次可以選不同題
         _activeChallengIds.delete(challengeId);
     }
 
@@ -405,7 +390,6 @@ build_park(center, center + "3", name="中央公園")`,
 
     // ── 建築增加時的回呼 ─────────────────────────────────────────
     function onBuildingAdded(count) {
-        // 只有在 build_park 解鎖後才開始出現驚嘆號
         if (!window.LessonSystem || !window.LessonSystem.isUnlocked('build_park')) return;
         setTimeout(() => {
             trySpawnForWave(0);
@@ -413,18 +397,13 @@ build_park(center, center + "3", name="中央公園")`,
     }
 
     function trySpawnForWave(wave) {
-        // 修正(3)：移除隨機拒絕機制，改為只要條件符合就生成
-        // 只有當 activeMarkers 未滿時才嘗試生成
         if (_activeMarkers.size >= MAX_ACTIVE) return;
 
-        // 檢查是否還有未完成的題目可以出（不限 wave，所有題目皆可）
         const hasAvailable = DEBUG_CHALLENGES.some(c =>
             !_dismissed.has(c.id) &&
             !_activeChallengIds.has(c.id)
         );
         if (!hasAvailable) {
-            // 所有題目都做完了，重置 dismissed 讓題目可以再出現
-            // （修正(3)：避免後期完全不出現）
             _dismissed.clear();
             _activeChallengIds.clear();
         }
@@ -442,247 +421,6 @@ build_park(center, center + "3", name="中央公園")`,
         _activeMarkers.clear();
         _activeChallengIds.clear();
         _markerObjs = [];
-    }
-
-    // ── 注入 CSS ──────────────────────────────────────────────────
-    function injectStyles() {
-        if (document.getElementById('debug-styles')) return;
-        const s = document.createElement('style');
-        s.id = 'debug-styles';
-        s.textContent = `
-#debugOverlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 2000;
-    background: rgba(4, 8, 28, 0.9);
-    backdrop-filter: blur(8px);
-    justify-content: center;
-    align-items: center;
-}
-#debugOverlay.open { display: flex; }
-
-#debugModal {
-    background: linear-gradient(145deg, #080d22 0%, #0f1530 100%);
-    border: 1.5px solid rgba(255, 200, 0, 0.4);
-    border-radius: 16px;
-    width: min(680px, 94vw);
-    max-height: 88vh;
-    overflow-y: auto;
-    box-shadow: 0 0 60px rgba(255,200,0,0.15), 0 20px 60px rgba(0,0,0,0.7);
-    animation: dbIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255,200,0,0.3) transparent;
-}
-@keyframes dbIn {
-    from { opacity:0; transform:scale(0.88) translateY(20px); }
-    to   { opacity:1; transform:scale(1) translateY(0); }
-}
-#debugModal::-webkit-scrollbar { width: 4px; }
-#debugModal::-webkit-scrollbar-thumb { background: rgba(255,200,0,0.3); border-radius: 2px; }
-
-.db-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 18px 22px 14px;
-    border-bottom: 1px solid rgba(255,200,0,0.2);
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: linear-gradient(145deg, #080d22, #0f1530);
-}
-.db-header-icon { font-size: 2rem; }
-#dbTitle {
-    font-family: 'Jersey 15', sans-serif;
-    font-size: 1.4rem;
-    color: #ffd700;
-    letter-spacing: 1px;
-    text-shadow: 0 0 12px rgba(255,215,0,0.4);
-    flex: 1;
-}
-.db-close {
-    background: none;
-    border: 1px solid rgba(255,200,0,0.25);
-    color: rgba(255,200,0,0.5);
-    font-size: 1rem;
-    width: 30px; height: 30px;
-    border-radius: 7px;
-    cursor: pointer;
-    transition: all 0.15s;
-    display: flex; align-items: center; justify-content: center;
-}
-.db-close:hover { color: #ffd700; border-color: #ffd700; background: rgba(255,200,0,0.08); }
-
-.db-body { padding: 18px 22px; }
-
-.db-intro {
-    font-family: 'Oxanium', sans-serif;
-    font-size: 0.9rem;
-    color: rgba(200,240,255,0.8);
-    line-height: 1.75;
-    margin-bottom: 14px;
-}
-
-.db-label {
-    font-family: 'Oxanium', monospace;
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: rgba(255,200,0,0.6);
-    margin-bottom: 7px;
-    display: block;
-}
-
-.db-code-block {
-    background: #06080f;
-    border: 1px solid rgba(255,200,0,0.2);
-    border-radius: 8px;
-    padding: 12px 16px;
-    font-family: 'Oxanium', monospace;
-    font-size: 0.88rem;
-    color: #f0e68c;
-    white-space: pre;
-    line-height: 1.9;
-    margin-bottom: 16px;
-    overflow-x: auto;
-}
-
-.db-question {
-    font-family: 'Oxanium', sans-serif;
-    font-size: 0.92rem;
-    font-weight: 700;
-    color: #fff;
-    line-height: 1.5;
-    margin-bottom: 12px;
-}
-
-.db-opts { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
-.db-opt {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 10px 14px;
-    border-radius: 8px;
-    border: 1px solid rgba(255,200,0,0.18);
-    background: rgba(0,0,0,0.3);
-    color: rgba(200,240,255,0.75);
-    font-family: 'Oxanium', sans-serif;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.15s;
-    user-select: none;
-    line-height: 1.55;
-}
-.db-opt:hover { border-color: #ffd700; color: #fff; background: rgba(255,200,0,0.06); }
-.db-opt.correct { border-color: #00ff88; background: rgba(0,255,136,0.1); color: #00ff88; }
-.db-opt.wrong   { border-color: #ff6050; background: rgba(255,96,80,0.08); color: #ff8070; }
-.db-opt-letter {
-    font-family: 'Jersey 15', monospace;
-    font-size: 1rem;
-    min-width: 20px;
-    text-align: center;
-    color: #ffd700;
-    flex-shrink: 0;
-}
-
-.db-editor-wrap {
-    border: 1px solid rgba(255,200,0,0.22);
-    border-radius: 8px;
-    overflow: hidden;
-    margin-bottom: 12px;
-}
-.db-editor-bar {
-    display: flex; align-items: center; gap: 7px;
-    padding: 5px 12px;
-    background: rgba(255,200,0,0.07);
-    border-bottom: 1px solid rgba(255,200,0,0.12);
-    font-family: 'Oxanium', monospace;
-    font-size: 10px; letter-spacing: 1px; color: rgba(255,200,0,0.4);
-}
-#dbCodeArea {
-    width: 100%;
-    min-height: 130px;
-    background: #08080f;
-    color: #ffd700;
-    font-family: 'Oxanium', monospace;
-    font-size: 13px;
-    line-height: 1.75;
-    padding: 12px 16px;
-    border: none;
-    outline: none;
-    resize: vertical;
-    tab-size: 4;
-}
-#dbCodeArea::placeholder { color: rgba(255,200,0,0.2); }
-
-.db-hint-box {
-    background: rgba(78,168,212,0.07);
-    border: 1px solid rgba(78,168,212,0.28);
-    border-radius: 7px;
-    padding: 9px 14px;
-    margin-bottom: 10px;
-    font-family: 'Oxanium', monospace;
-    font-size: 0.82rem;
-    color: #4ea8d4;
-    line-height: 1.75;
-    white-space: pre-wrap;
-}
-
-.db-feedback {
-    margin-top: 10px;
-    padding: 11px 15px;
-    border-radius: 8px;
-    font-family: 'Oxanium', monospace;
-    font-size: 0.83rem;
-    line-height: 1.7;
-    display: none;
-}
-.db-feedback.ok  { display: block; background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.3); color: #00ff88; }
-.db-feedback.err { display: block; background: rgba(255,96,80,0.08); border: 1px solid rgba(255,96,80,0.3); color: #ff8070; }
-
-.db-btn-row { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
-.db-btn {
-    font-family: 'Oxanium', monospace;
-    font-size: 0.82rem;
-    font-weight: 700;
-    padding: 8px 18px;
-    border-radius: 7px;
-    border: none;
-    cursor: pointer;
-    transition: all 0.15s;
-}
-.db-btn-run { background: #ffd700; color: #1a1000; box-shadow: 0 0 12px rgba(255,215,0,0.35); }
-.db-btn-run:hover { background: #ffe44d; box-shadow: 0 0 22px rgba(255,215,0,0.6); transform: translateY(-1px); }
-.db-btn-hint { background: transparent; color: rgba(78,168,212,0.6); border: 1px solid rgba(78,168,212,0.35); }
-.db-btn-hint:hover { color: #4ea8d4; border-color: #4ea8d4; }
-.db-btn-done { background: #00ff88; color: #040e12; box-shadow: 0 0 14px rgba(0,255,136,0.4); margin-top: 8px; }
-.db-btn-done:hover { background: #33ffaa; box-shadow: 0 0 26px rgba(0,255,136,0.65); transform: translateY(-1px); }
-
-#debugWaveBadge {
-    position: fixed;
-    top: 70px;
-    right: 16px;
-    z-index: 1500;
-    background: rgba(4,8,28,0.92);
-    border: 1.5px solid rgba(255,200,0,0.5);
-    border-radius: 8px;
-    padding: 7px 14px;
-    font-family: 'Oxanium', monospace;
-    font-size: 0.78rem;
-    color: #ffd700;
-    box-shadow: 0 0 18px rgba(255,200,0,0.25);
-    display: none;
-    animation: badgeIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
-    pointer-events: none;
-}
-@keyframes badgeIn {
-    from { opacity:0; transform: translateX(20px) scale(0.9); }
-    to   { opacity:1; transform: translateX(0)    scale(1); }
-}
-        `;
-        document.head.appendChild(s);
     }
 
     // ── 注入 Modal HTML ───────────────────────────────────────────
@@ -799,7 +537,6 @@ build_park(center, center + "3", name="中央公園")`,
 
     // ── init ──────────────────────────────────────────────────────
     function init() {
-        injectStyles();
         injectModal();
         initClickDetect();
     }
