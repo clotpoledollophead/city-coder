@@ -9,9 +9,13 @@ const STARTER_CODE = `# CodeScape：未來程市 🏙️
 # ── 使用規則 ──────────────────────────────────────────
 # build_xxx(row, col)  →  row 是列，col 是欄（整數 0–79）
 # 有效陸地約 row 25–55, col 25–55（懸停地圖格子可查座標）
-# 用 # 開頭寫注解，程式不會執行該行
+# 可使用 for / while / if-else / def 等完整 Python 語法！
 # Tab 鍵 → 自動縮排 4 格
 # ──────────────────────────────────────────────────────
+
+# 範例：用 for 迴圈蓋一排房子
+for i in range(5):
+    build_house(40, 40 + i, name="房子" + str(i + 1))
 `;
 
 const LIB_FUNCTIONS = [
@@ -115,11 +119,9 @@ function runCode() {
     if (window.LessonSystem) {
         const ALL_LIB_FNS = LIB_FUNCTIONS.map(f => f.name).filter(n => n !== 'clear_all');
         const lockedCalls = ALL_LIB_FNS.filter(fn => {
-            const lines = code.split('\n');
-            return lines.some(line => {
-                const stripped = line.replace(/#.*$/, '');
-                return new RegExp(`\\b${fn}\\s*\\(`).test(stripped);
-            }) && !window.LessonSystem.isUnlocked(fn);
+            // Strip comments and strings, check for bare function name calls
+            const stripped = code.replace(/#[^\n]*/g, '').replace(/(['"]).*?\1/g, '""');
+            return new RegExp(`\\b${fn}\\s*\\(`).test(stripped) && !window.LessonSystem.isUnlocked(fn);
         });
         if (lockedCalls.length > 0) {
             clearLog();
@@ -142,15 +144,26 @@ function runCode() {
 
     setTimeout(() => {
         try {
-            const { jsCode, parseErrors, execResults, totalBuilt } = window.PythonRunner.run(code);
-            parseErrors.forEach(e => log(`⚠ 第 ${e.line} 行：${e.msg}`, 'log-warn'));
+            const { parseErrors, execResults, printOutput, errors, totalBuilt } = window.PythonRunner.run(code);
+
+            // Print output (from print() calls)
+            if (printOutput && printOutput.length > 0) {
+                printOutput.forEach(line => log(`📤 ${line}`, 'log-info'));
+            }
+
+            // Parse / runtime errors
+            if (parseErrors) parseErrors.forEach(e => log(`⚠ ${e.line > 0 ? `第 ${e.line} 行：` : ''}${e.msg}`, 'log-warn'));
+            if (errors) errors.forEach(e => log(`✗ ${e.msg}`, 'log-err'));
+
+            // Build results
             execResults.forEach(r => {
-                if (r.skipped) log(`↷ 第 ${r.call.lineNum} 行：${r.call.fn}() — 座標已有建築，跳過`, 'log-warn');
-                else if (r.ok) log(`✓ 第 ${r.call.lineNum} 行：${r.call.fn}() → ${r.result ? r.result.type : '完成'}`, 'log-ok');
-                else log(`✗ 第 ${r.call.lineNum} 行：${r.call.fn}() — ${r.error}`, 'log-err');
+                if (r.skipped) log(`↷ ${r.call.fn}() — 座標已有建築，跳過`, 'log-warn');
+                else if (r.ok) log(`✓ ${r.call.fn}() → ${r.result ? r.result.type : '完成'}`, 'log-ok');
+                else if (r.error) log(`✗ ${r.call.fn}() — ${r.error}`, 'log-err');
             });
-            const errCount = execResults.filter(r => !r.ok).length;
-            log(`▸ 完成！共建造 ${totalBuilt} 個設施${errCount > 0 ? `，${errCount} 個錯誤` : ''}`,
+
+            const hasErrors = (errors && errors.length > 0) || (parseErrors && parseErrors.length > 0);
+            log(`▸ 完成！共建造 ${totalBuilt} 個設施${hasErrors ? '，有錯誤（見上方）' : ''}`,
                 totalBuilt > 0 ? 'log-ok' : 'log-warn');
 
             const badge = document.getElementById('outputBadge');

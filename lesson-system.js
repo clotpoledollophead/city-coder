@@ -958,7 +958,15 @@ window.LessonSystem = (function () {
         const fb = document.getElementById('lsFeedback');
 
         if (window.PythonRunner && window.CityLib) {
-            try { window.PythonRunner.run(code); } catch (e) { /* ignore */ }
+            try {
+                const result = window.PythonRunner.run(code);
+                // Show print output inside lesson feedback area briefly
+                if (result.printOutput && result.printOutput.length > 0) {
+                    const preview = result.printOutput.slice(0, 5).map(l => `📤 ${l}`).join('\n');
+                    fb.className = 'ls-feedback ok';
+                    fb.textContent = preview;
+                }
+            } catch (e) { /* ignore runtime errors during lesson check */ }
         }
 
         if (!code) {
