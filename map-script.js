@@ -130,6 +130,50 @@ function tileElevation(row, col, GRID) {
     return h * h * 3.5;
 }
 
+// ── Water texture generator ────────────────────────────────────────────────
+function makeWaterTexture() {
+    const size = 512;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = size;
+    const ctx = cv.getContext('2d');
+
+    // Deep base gradient
+    const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 1.4);
+    grad.addColorStop(0, '#1a5fa8');
+    grad.addColorStop(1, '#0a3060');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+
+    // Subtle wave lines
+    for (let i = 0; i < 60; i++) {
+        const y = Math.random() * size;
+        const alpha = Math.random() * 0.12 + 0.04;
+        ctx.strokeStyle = `rgba(100,180,255,${alpha})`;
+        ctx.lineWidth = Math.random() * 3 + 1;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        for (let x = 0; x <= size; x += 32) {
+            ctx.lineTo(x, y + Math.sin(x * 0.04 + Math.random()) * 4);
+        }
+        ctx.stroke();
+    }
+
+    // Specular glints
+    for (let i = 0; i < 120; i++) {
+        const x = Math.random() * size, y = Math.random() * size;
+        const r = Math.random() * 2 + 0.5;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(200,235,255,${Math.random() * 0.18 + 0.04})`;
+        ctx.fill();
+    }
+
+    const tex = new THREE.CanvasTexture(cv);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(12, 12);
+    return tex;
+}
+
 function init3DMap() {
     const container = document.getElementById('mapContainer');
     const canvas = createMapCanvas();
@@ -188,8 +232,19 @@ function init3DMap() {
     window._cityLandMask = landMask;
     window._cityGrid = { GRID, TILE_W, OFFSET };
 
-    const grassColors = [0x2d6a2d, 0x317531, 0x2a6128, 0x348034, 0x276025, 0x3a8a38, 0x2f7030, 0x307832];
-    const sandColors = [0xd4b483, 0xc8a96e, 0xdbc07a, 0xcfb87f, 0xc9a86c];
+    // ── Bright pastel grass & sand palettes (Animal Crossing-style) ────────────
+    const grassColors = [
+        0x6abf45, 0x72cc4a, 0x65b83e, 0x7ad050, 0x60b03a,
+        0x79c948, 0x6dc243, 0x58a832,
+        0x85d45a, 0x7ece52, // bright sunny highlights
+        0x5da836, 0x68bb40, // slightly deeper for variation
+        0x80cb4e, 0x63b63c, // warm yellow-green tones
+    ];
+    const sandColors = [
+        0xd4b483, 0xc8a96e, 0xdbc07a, 0xcfb87f, 0xc9a86c,
+        0xe2c88a, 0xbfa060, // lighter/darker sand variation
+        0xd6bc7a, 0xca9f58, // warm tan tones
+    ];
     const tileGeo = new THREE.BoxGeometry(TILE_W - GAP, 1.0, TILE_W - GAP);
 
     const tiles = [];
@@ -202,7 +257,9 @@ function init3DMap() {
             const shore = isShore(row, col, landMask, GRID);
             const elev = tileElevation(row, col, GRID);
             const palette = shore ? sandColors : grassColors;
-            const color = palette[(row * 3 + col * 7) % palette.length];
+            // Richer hash for more organic, less checkerboard distribution
+            const colorIdx = (row * 13 + col * 7 + (row ^ col) * 3) % palette.length;
+            const color = palette[colorIdx];
             const tile = new THREE.Mesh(tileGeo, new THREE.MeshLambertMaterial({ color }));
             tile.position.set(x, elev - 0.5, z);
             tile.receiveShadow = true;
@@ -221,7 +278,7 @@ function init3DMap() {
             if (shore) {
                 const cliffH = Math.max(2.5, elev + 2.5);
                 const cliffGeo = new THREE.BoxGeometry(TILE_W - GAP, cliffH, TILE_W - GAP);
-                const cliff = new THREE.Mesh(cliffGeo, new THREE.MeshLambertMaterial({ color: 0x9a7040 }));
+                const cliff = new THREE.Mesh(cliffGeo, new THREE.MeshLambertMaterial({ color: 0xc8a882 }));
                 cliff.position.set(x, -(cliffH / 2) + 0.25, z);
                 scene.add(cliff);
             }
@@ -328,8 +385,17 @@ function init3DMap() {
         }
     });
 
+    // ── Ocean with canvas water texture ───────────────────────────────────────
     const OCEAN_SIZE = 2600;
-    const oceanMat = new THREE.MeshLambertMaterial({ color: 0x1a6eb5 });
+    const waterTex = makeWaterTexture();
+    const oceanMat = new THREE.MeshStandardMaterial({
+        map: waterTex,
+        color: 0x1a6eb5,
+        roughness: 0.55,
+        metalness: 0.15,
+        transparent: true,
+        opacity: 0.92,
+    });
     const oceanMesh = new THREE.Mesh(new THREE.PlaneGeometry(OCEAN_SIZE, OCEAN_SIZE), oceanMat);
     oceanMesh.rotation.x = -Math.PI / 2;
     oceanMesh.position.y = 0;
@@ -422,10 +488,6 @@ function init3DMap() {
         sunDisc.visible = elev > 0.01;
 
         // ── Shadow toggle ─────────────────────────────────────────────────────
-        // Disable sun shadow casting entirely when the sun is near or below the
-        // horizon.  This eliminates the "ghost shadow" artifact where shadow maps
-        // still project at near-zero sun intensity, causing odd dark patches that
-        // linger for a couple of seconds after/before true night.
         const sunAboveHorizon = elev > SUN_SHADOW_ELEV_THRESHOLD;
         if (sun.castShadow !== sunAboveHorizon) {
             sun.castShadow = sunAboveHorizon;
@@ -440,7 +502,8 @@ function init3DMap() {
         moonMesh.visible = moonElev > 0.1;
 
         starMat.opacity = Math.max(0, 1 - elev * 3.5);
-        oceanMat.color.set(elev < 0.08 ? 0x061830 : 0x1a6eb5);
+        oceanMat.color.set(elev < 0.08 ? 0x081428 : 0x1a6eb5);
+        oceanMat.opacity = elev < 0.08 ? 0.88 : 0.92;
 
         if (clockEl) {
             const totalHours = Math.floor(dayT * 24);
@@ -451,15 +514,9 @@ function init3DMap() {
         }
 
         // ── Streetlights ──────────────────────────────────────────────────────
-        // Lamps turn on smoothly as the sun drops below LAMP_ON_ELEV_THRESHOLD
-        // and turn off as it rises above it again.  The transition is instant
-        // (no fade) so there's no overlap between sun-shadow rendering and lamp
-        // glow — you either have sun shadows or lamp halos, never both.
         const lights = window._cityStreetLights;
         if (lights && lights.length > 0) {
             const lampOn = elev < LAMP_ON_ELEV_THRESHOLD;
-            // Smooth fade for the lamp: full brightness well into night,
-            // quick ramp near the threshold so the switch feels natural.
             const t = Math.max(0, 1 - elev / LAMP_ON_ELEV_THRESHOLD);
             const lampIntensity = lampOn ? t * t * 2.5 : 0;
             lights.forEach(({ pl, bulbMat }) => {
@@ -473,6 +530,12 @@ function init3DMap() {
     function updateWaves(dt) {
         waveT += dt;
         oceanMesh.position.y = Math.sin(waveT * 0.6) * 0.12;
+        // Slowly scroll the water texture for a flowing effect
+        if (waterTex) {
+            waterTex.offset.x = (waveT * 0.004) % 1;
+            waterTex.offset.y = (waveT * 0.002) % 1;
+            waterTex.needsUpdate = true;
+        }
     }
 
     let activeBtn = -1, lastMouse = { x: 0, y: 0 };
