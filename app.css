@@ -1,3 +1,26 @@
+/* ── Header position override (app page only) ───────────── */
+.header--relative {
+    position: relative;
+}
+
+/* ── Header controls group (clock + buttons) ────────────── */
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+/* ── Right-content position override (app page only) ────── */
+.right-content--relative {
+    position: relative;
+}
+
+/* ── Run bar position context ───────────────────────────── */
+#runBar {
+    position: relative;
+}
+
 /* ── UI Guide Panel ──────────────────────────────────────── */
 #uiGuidePanel {
     position: absolute;

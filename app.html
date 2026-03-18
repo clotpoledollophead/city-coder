@@ -22,12 +22,12 @@
 
 <body>
 
-    <header class="header" style="position:relative;">
+    <header class="header header--relative">
         <h1>CITY CODER</h1>
         <div class="header-sub">
             <span class="subtitle">CodeScape：未來程市</span>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+        <div class="header-controls">
             <div id="mapClock" class="night">12am</div>
             <button id="btnGuide" title="查看介面使用說明">❓ 使用說明</button>
             <button id="btnResetGame" title="清除所有進度，重新開始">🔄 重新遊玩</button>
@@ -45,7 +45,7 @@
 
             <div class="cm-wrap" id="editorWrap"></div>
 
-            <div class="run-bar" style="position:relative;">
+            <div class="run-bar" id="runBar">
                 <button class="btn btn-run" id="btnRun">▶ 執行</button>
                 <button class="btn btn-clear-code" id="btnClearCode" title="清除程式碼編輯區（不影響地圖）">✎ 清除程式碼</button>
                 <button class="btn btn-clear" id="btnClear">🗑 清除地圖</button>
@@ -87,7 +87,7 @@
 
         </aside>
 
-        <main class="right-content" style="position:relative;">
+        <main class="right-content right-content--relative">
 
             <!-- ── UI Guide Panel ── -->
             <div id="uiGuidePanel">
