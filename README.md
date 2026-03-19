@@ -22,7 +22,7 @@ This project is submitted to the **全國創意與智慧科技競賽 (National C
 | Member | Role |
 |---|---|
 | **Cindy** | Website development — AI assistant integration, performance optimization, tutorial system, documentation (README), logo design |
-| **Selina** | Website development — overall UI layout and visual design, lesson plan system, debug challenges |
+| **Selina** | Website development — UI layout and visual design, lesson plan system, debug challenges |
 | **Ivy** | Documentation — required competition reports, poster design (21cm × 29cm, 200 dpi) |
 
 ---
