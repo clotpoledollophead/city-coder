@@ -8,3 +8,14 @@
     transition: color 0.2s;
 }
 .skip-link:hover { color: rgba(0, 255, 136, 0.8); }
+
+.readme-link {
+    margin-top: 0.6rem;
+    font-family: 'Oxanium', sans-serif;
+    font-size: 0.75rem;
+    color: rgba(0, 255, 136, 0.25);
+    text-decoration: none;
+    letter-spacing: 0.5px;
+    transition: color 0.2s;
+}
+.readme-link:hover { color: rgba(0, 255, 136, 0.6); }
