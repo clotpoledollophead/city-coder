@@ -465,7 +465,7 @@ window.LessonSystem = (function () {
                     errMsg: '函式需要用 return 回傳結果！',
                 },
                 {
-                    q: '【挑戰】定義函式 build_community(r, c)，在函式裡呼叫 build_fountain，然後呼叫這個函式至少兩次',
+                    q: '【挑戰】定義函式 build_community(r, c)，在函式裡呼叫 build_fountain，然後呼叫 build_community 函式至少兩次',
                     hint: null,
                     check: (code) => {
                         if (!/def\s+\w+\s*\(/.test(code)) return false;
