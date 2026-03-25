@@ -664,6 +664,60 @@ window.LessonSystem = (function () {
     }
 
     // ══════════════════════════════════════════════════════════════════════
+    //  Leave Confirmation Dialog  ← 新增
+    // ══════════════════════════════════════════════════════════════════════
+    function showConfirmLeave(onConfirm) {
+        let confirmBox = document.getElementById('lsLeaveConfirm');
+        if (!confirmBox) {
+            confirmBox = document.createElement('div');
+            confirmBox.id = 'lsLeaveConfirm';
+            confirmBox.style.cssText =
+                'position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;' +
+                'background:rgba(0,0,0,0.65);backdrop-filter:blur(3px);';
+            confirmBox.innerHTML = `
+                <div style="background:#0d1629;border:1px solid rgba(245,166,35,0.5);border-radius:14px;
+                            padding:2rem 2.5rem;max-width:360px;width:90%;text-align:center;
+                            font-family:'Oxanium',monospace;box-shadow:0 8px 32px rgba(0,0,0,0.7);">
+                    <div style="font-size:2rem;margin-bottom:0.8rem;">⚠️</div>
+                    <div style="color:#f5a623;font-size:1rem;font-weight:600;margin-bottom:0.5rem;">確定要離開課程？</div>
+                    <div style="color:rgba(255,255,255,0.6);font-size:0.82rem;margin-bottom:1.5rem;line-height:1.6;">
+                        你的學習進度將不會被儲存，<br>下次需要重新開始此課程。
+                    </div>
+                    <div style="display:flex;gap:0.8rem;justify-content:center;">
+                        <button id="lsLeaveCancel"
+                            style="padding:0.5rem 1.4rem;border-radius:8px;border:1px solid rgba(255,255,255,0.2);
+                                   background:transparent;color:#fff;font-family:'Oxanium',monospace;
+                                   cursor:pointer;font-size:0.88rem;transition:background 0.15s;">
+                            繼續學習
+                        </button>
+                        <button id="lsLeaveConfirmBtn"
+                            style="padding:0.5rem 1.4rem;border-radius:8px;border:none;
+                                   background:#f5a623;color:#000;font-family:'Oxanium',monospace;
+                                   cursor:pointer;font-size:0.88rem;font-weight:600;transition:opacity 0.15s;">
+                            確定離開
+                        </button>
+                    </div>
+                </div>`;
+            document.body.appendChild(confirmBox);
+        }
+
+        confirmBox.style.display = 'flex';
+
+        const cancelBtn = document.getElementById('lsLeaveCancel');
+        const confirmBtn = document.getElementById('lsLeaveConfirmBtn');
+
+        // Clone nodes to remove any old event listeners
+        const newCancel = cancelBtn.cloneNode(true);
+        const newConfirm = confirmBtn.cloneNode(true);
+        cancelBtn.replaceWith(newCancel);
+        confirmBtn.replaceWith(newConfirm);
+
+        const cleanup = () => { confirmBox.style.display = 'none'; };
+        newCancel.addEventListener('click', cleanup);
+        newConfirm.addEventListener('click', () => { cleanup(); onConfirm(); });
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
     //  Inject Modal HTML (3-phase: learn → quiz → practice)
     // ══════════════════════════════════════════════════════════════════════
     function injectModal() {
@@ -725,8 +779,13 @@ window.LessonSystem = (function () {
             </div>`;
         document.body.appendChild(overlay);
 
-        document.getElementById('lsClose').addEventListener('click', closeModal);
-        overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+        // ✕ 按鈕 → 觸發離開確認
+        document.getElementById('lsClose').addEventListener('click', () => closeModal(false));
+
+        // 點擊 overlay 背景 → 觸發離開確認
+        overlay.addEventListener('click', e => {
+            if (e.target === overlay) closeModal(false);
+        });
 
         overlay.querySelectorAll('.ls-tab').forEach(tab => {
             tab.addEventListener('click', () => {
@@ -759,7 +818,7 @@ window.LessonSystem = (function () {
         document.getElementById('lsSkipBtn').addEventListener('click', () => {
             if (confirm('確定要略過此課程並直接解鎖？（建議完成課程，學習效果更好）')) {
                 doUnlock(LESSONS[_state.lessonIdx].fnName);
-                closeModal();
+                closeModal(true);
             }
         });
     }
@@ -941,7 +1000,17 @@ window.LessonSystem = (function () {
         document.getElementById('lessonModal').scrollTop = 0;
     }
 
-    function closeModal() {
+    // ══════════════════════════════════════════════════════════════════════
+    //  closeModal  ← 修改：加入 force 參數控制是否跳過確認
+    // ══════════════════════════════════════════════════════════════════════
+    function closeModal(force = false) {
+        if (!force) {
+            showConfirmLeave(() => {
+                document.getElementById('lessonOverlay').classList.remove('open');
+                document.body.style.overflow = '';
+            });
+            return;
+        }
         document.getElementById('lessonOverlay').classList.remove('open');
         document.body.style.overflow = '';
     }
@@ -985,7 +1054,8 @@ window.LessonSystem = (function () {
                 fb.innerHTML = `${lesson.successMsg}<br><br>
                     <button class="ls-btn ls-btn-run" id="lsConfirmBtn" style="margin-top:6px;">✓ 完成並解鎖！</button>`;
                 document.getElementById('lsConfirmBtn').addEventListener('click', () => {
-                    doUnlock(lesson.fnName); closeModal();
+                    doUnlock(lesson.fnName);
+                    closeModal(true); // 解鎖完成，直接關閉不需確認
                 });
                 setTimeout(() => {
                     const modal = document.getElementById('lessonModal');
