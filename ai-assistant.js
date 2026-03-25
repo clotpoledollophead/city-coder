@@ -16,9 +16,133 @@ window.AIAssistant = (function () {
 - 回答要簡短友善，像在跟學生聊天
 - 如果是程式碼問題，提供可以直接複製貼上的範例
 - 如果問題跟遊戲或 Python 無關，溫和地引導回主題
-- 不要用 markdown 標題（##），可以用 emoji 讓回答更活潑`;
+- 可以使用 markdown 格式讓回答更清晰，例如用 \`code\` 標記程式碼、用 **粗體** 強調重點、用清單列出步驟`;
 
     let history = []; // conversation history
+
+    // ── Markdown parser ───────────────────────────────────────
+    function parseMarkdown(text) {
+        // Escape HTML first (except we'll handle it inline)
+        function escapeHtmlRaw(str) {
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        // Process fenced code blocks first (``` ... ```)
+        const codeBlocks = [];
+        text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+            const idx = codeBlocks.length;
+            codeBlocks.push({ lang: lang || '', code: code.trim() });
+            return `\x00CODEBLOCK${idx}\x00`;
+        });
+
+        // Split into lines for block-level processing
+        const lines = text.split('\n');
+        const output = [];
+        let i = 0;
+
+        while (i < lines.length) {
+            const line = lines[i];
+
+            // Placeholder: fenced code block
+            if (line.includes('\x00CODEBLOCK')) {
+                const m = line.match(/\x00CODEBLOCK(\d+)\x00/);
+                if (m) {
+                    const { lang, code } = codeBlocks[parseInt(m[1])];
+                    const langLabel = lang ? `<span class="ai-code-lang">${escapeHtmlRaw(lang)}</span>` : '';
+                    const copyBtn = `<button class="ai-code-copy" onclick="this.parentElement.nextElementSibling && navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent).then(()=>{this.textContent='✓ 已複製';setTimeout(()=>this.textContent='複製',1500)})">複製</button>`;
+                    output.push(`<div class="ai-code-block"><div class="ai-code-header">${langLabel}${copyBtn}</div><pre><code>${escapeHtmlRaw(code)}</code></pre></div>`);
+                }
+                i++;
+                continue;
+            }
+
+            // Heading: ### ## #
+            const headingMatch = line.match(/^(#{1,3})\s+(.+)$/);
+            if (headingMatch) {
+                const level = headingMatch[1].length;
+                const content = inlineMarkdown(headingMatch[2], escapeHtmlRaw);
+                output.push(`<div class="ai-heading ai-h${level}">${content}</div>`);
+                i++;
+                continue;
+            }
+
+            // Unordered list
+            if (/^[-*+]\s+/.test(line)) {
+                const items = [];
+                while (i < lines.length && /^[-*+]\s+/.test(lines[i])) {
+                    items.push(`<li>${inlineMarkdown(lines[i].replace(/^[-*+]\s+/, ''), escapeHtmlRaw)}</li>`);
+                    i++;
+                }
+                output.push(`<ul class="ai-list">${items.join('')}</ul>`);
+                continue;
+            }
+
+            // Ordered list
+            if (/^\d+\.\s+/.test(line)) {
+                const items = [];
+                while (i < lines.length && /^\d+\.\s+/.test(lines[i])) {
+                    items.push(`<li>${inlineMarkdown(lines[i].replace(/^\d+\.\s+/, ''), escapeHtmlRaw)}</li>`);
+                    i++;
+                }
+                output.push(`<ol class="ai-list">${items.join('')}</ol>`);
+                continue;
+            }
+
+            // Horizontal rule
+            if (/^---+$/.test(line.trim())) {
+                output.push('<hr class="ai-hr">');
+                i++;
+                continue;
+            }
+
+            // Blank line
+            if (line.trim() === '') {
+                // Only add spacing if we have content above and below
+                if (output.length > 0) {
+                    output.push('<div class="ai-spacer"></div>');
+                }
+                i++;
+                continue;
+            }
+
+            // Regular paragraph line — inline markdown
+            output.push(`<span class="ai-line">${inlineMarkdown(line, escapeHtmlRaw)}</span><br>`);
+            i++;
+        }
+
+        // Remove trailing spacers
+        while (output.length > 0 && output[output.length - 1] === '<div class="ai-spacer"></div>') {
+            output.pop();
+        }
+
+        return output.join('');
+    }
+
+    function inlineMarkdown(text, escapeHtmlRaw) {
+        // Escape HTML
+        text = escapeHtmlRaw(text);
+
+        // Inline code: `code`
+        text = text.replace(/`([^`]+)`/g, '<code class="ai-inline-code">$1</code>');
+
+        // Bold+italic: ***text***
+        text = text.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+
+        // Bold: **text**
+        text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+        // Italic: *text* or _text_
+        text = text.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+        text = text.replace(/_([^_\n]+)_/g, '<em>$1</em>');
+
+        // Strikethrough: ~~text~~
+        text = text.replace(/~~(.+?)~~/g, '<del>$1</del>');
+
+        return text;
+    }
 
     // ── Inject HTML ───────────────────────────────────────────
     function injectHTML() {
@@ -74,7 +198,11 @@ window.AIAssistant = (function () {
         const msgs = document.getElementById('aiMessages');
         const div = document.createElement('div');
         div.className = 'ai-msg bot';
-        div.innerHTML = `<span class="ai-msg-avatar">🤖</span><div class="ai-msg-bubble">${escapeHtml(text)}</div>`;
+        const bubble = document.createElement('div');
+        bubble.className = 'ai-msg-bubble ai-markdown';
+        bubble.innerHTML = parseMarkdown(text);
+        div.innerHTML = `<span class="ai-msg-avatar">🤖</span>`;
+        div.appendChild(bubble);
         msgs.appendChild(div);
         msgs.scrollTop = msgs.scrollHeight;
     }
@@ -83,7 +211,13 @@ window.AIAssistant = (function () {
         const msgs = document.getElementById('aiMessages');
         const div = document.createElement('div');
         div.className = 'ai-msg user';
-        div.innerHTML = `<div class="ai-msg-bubble">${escapeHtml(text)}</div><span class="ai-msg-avatar">👤</span>`;
+        // User messages: plain escaped text (no markdown needed)
+        const escaped = text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\n/g, '<br>');
+        div.innerHTML = `<div class="ai-msg-bubble">${escaped}</div><span class="ai-msg-avatar">👤</span>`;
         msgs.appendChild(div);
         msgs.scrollTop = msgs.scrollHeight;
     }
@@ -118,14 +252,6 @@ window.AIAssistant = (function () {
     function setInputEnabled(enabled) {
         document.getElementById('aiInput').disabled = !enabled;
         document.getElementById('aiSendBtn').disabled = !enabled;
-    }
-
-    function escapeHtml(str) {
-        return str
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/\n/g, '<br>');
     }
 
     // ── Gemini API call ───────────────────────────────────────
